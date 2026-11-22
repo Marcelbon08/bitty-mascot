@@ -6,6 +6,16 @@ Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pas
 
 ---
 
+## Descarga rápida
+
+La última versión portable (v1.8.1) se puede descargar ya empaquetada:
+
+**[⬇️ Descargar bitty-mascot-v1.8.1.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v1.8.1/bitty-mascot-v1.8.1.zip)**
+
+Descomprime, entra en la carpeta y ejecuta `powershell -ExecutionPolicy Bypass -File .\install.ps1`. También puedes usar el botón verde **Code → Download ZIP** de este repositorio.
+
+---
+
 ## ⚠️ Hecho con IA
 
 **Este proyecto fue creado con inteligencia artificial (IA), bajo supervisión humana.**
