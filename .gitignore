@@ -1,0 +1,14 @@
+# Archivos de depuracion / instalaciones anteriores
+dbg.txt
+debug-*.txt
+launch-*.txt
+*.log
+
+# Estado local y temporales
+state.json
+*.tmp
+*.bak
+
+# Salida de OpenCode redirigida por la mascota
+bitty-opencode-out.txt
+bitty-opencode-err.txt
