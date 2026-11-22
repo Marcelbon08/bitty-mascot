@@ -1,4 +1,4 @@
-# Archivos de depuracion / instalaciones anteriores
+# Archivos de depuracion de la version anterior
 dbg.txt
 debug-*.txt
 launch-*.txt
@@ -12,3 +12,11 @@ state.json
 # Salida de OpenCode redirigida por la mascota
 bitty-opencode-out.txt
 bitty-opencode-err.txt
+
+# Artefactos de compilacion
+build/
+dist/
+*.spec
+__pycache__/
+*.py[cod]
+venv/

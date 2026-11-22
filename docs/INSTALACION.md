@@ -1,82 +1,120 @@
-# Instalación detallada y solución de problemas
+# Instalación detallada y solución de problemas (v2.0.0)
 
-## Instalación automática
+## Opción A: binario ya compilado (lo más fácil)
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1
-```
+Descarga el paquete de tu sistema desde [releases](https://github.com/Marcelbon08/bitty-mascot/releases/latest).
 
-El instalador copia `src\` a `%LOCALAPPDATA%\BittyMascot`, crea el agente de identidad, añade el acceso directo de inicio y arranca Bitty. Se puede volver a ejecutar sin problemas (sobrescribe los archivos pero conserva tu `bitty.md` si lo has editado).
+### Windows
 
-## Instalación manual
-
-1. Copia **toda** la carpeta `src` (el subdirectorio `sprites\` es imprescindible) a donde quieras, por ejemplo `C:\Herramientas\Bitty`.
-2. Ejecuta:
-
-   ```powershell
-   powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File C:\Herramientas\Bitty\bitty-mascot.ps1
-   ```
-
-3. Si quieres que arranque con Windows, crea un acceso directo a `powershell.exe` en:
+1. Descomprime `Bitty-Windows.zip`.
+2. Ejecuta `Bitty.exe`.
+3. Para que arranque con Windows: `powershell -ExecutionPolicy Bypass -File .\install.ps1` desde la carpeta descomprimida (crea el acceso directo), o crea tú un acceso directo en:
 
    ```
    %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
    ```
 
-   con estos argumentos:
+   con destino `Bitty.exe` y directorio de trabajo la carpeta donde está.
 
-   ```
-   -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\Herramientas\Bitty\bitty-mascot.ps1"
-   ```
+### macOS
 
-La mascota crea sola `~/.config/opencode/agents/bitty.md` si no existe.
+1. Descomprime `Bitty-macOS.zip`.
+2. Arrastra `Bitty.app` a **Aplicaciones**.
+3. Si macOS impide abrirla: **System Settings → Privacy & Security → Open Anyway** (o clic derecho → *Open*).
+4. Para arrancar con la sesión, usa `install.sh` desde el repositorio (crea un LaunchAgent), o añade `Bitty.app` a **System Settings → General → Login Items**.
+
+### Linux
+
+1. Descomprime `Bitty-Linux.zip`.
+2. `chmod +x Bitty/Bitty && ./Bitty/Bitty`.
+3. Necesitas un entorno de escritorio con Qt (X11 o Wayland). En Wayland puede hacer falta `QT_QPA_PLATFORM=wayland`.
+4. Para arrancar con la sesión: `install.sh` crea `~/.config/systemd/user/bitty.service` y lo habilita.
+
+## Opción B: desde el código fuente
+
+Necesitas **Python 3.9+**.
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+macOS / Linux:
+
+```bash
+bash install.sh            # con arranque automático
+bash install.sh --no-autostart
+```
+
+Manual:
+
+```bash
+python -m venv venv
+# Windows: venv\Scripts\activate ; macOS/Linux: source venv/bin/activate
+pip install -r requirements.txt
+python -m bitty
+```
+
+El agente `~/.config/opencode/agents/bitty.md` se crea automáticamente al arrancar si no existe.
 
 ## Solución de problemas
 
-### «No encuentro el ejecutable de OpenCode»
+### No encuentro OpenCode
 
 Bitty busca la CLI en este orden:
 
-1. `%APPDATA%\npm\node_modules\@opencode\cli\bin\opencode.exe`
-2. `%LOCALAPPDATA%\npm\node_modules\@opencode\cli\bin\opencode.exe`
-3. `%ProgramFiles%\opencode\opencode.exe`
-4. El `opencode` que haya en `PATH`
+1. Windows: `%APPDATA%\npm\node_modules\@opencode\cli\bin\opencode.exe`
+2. Windows: `%LOCALAPPDATA%\npm\node_modules\@opencode\cli\bin\opencode.exe`
+3. macOS: `/opt/homebrew/bin/opencode`, `/usr/local/bin/opencode`
+4. Linux: `/usr/bin/opencode`, `~/.local/bin/opencode`, `~/.opencode/bin/opencode`
+5. El `opencode` que haya en `PATH`
 
-Instala la CLI con `npm install -g opencode-ai` o sigue la documentación oficial: <https://opencode.ai/docs/cli/>.
+Instala la CLI siguiendo <https://opencode.ai/docs/cli/>.
 
-### Los acentos se ven mal («Ã³»)
+### El atajo global no funciona
 
-El script lleva BOM UTF-8. Si lo has editado con un editor que lo quitó, vuelve a guardarlo como **UTF-8 con BOM** o restaura el original.
+- Windows/Linux: prueba `Ctrl+Alt+B`.
+- macOS: `⌘+Alt+B` o `Ctrl+Alt+B`.
 
-### El atajo `Ctrl+Alt+B` no funciona
+Si otra app usa esa combinación, Bitty no podrá registrarla; el menú derecho sigue funcionando. En macOS puede hacer falta conceder permiso de **Accesibilidad** a la app para escuchar atajos globales.
 
-Otra aplicación puede estar usando esa combinación. Bitty prueba varios IDs de reserva y, como último recurso, registra `Ctrl+Alt+J`. Mira el tooltip de la mascota para saber cuál quedó activo.
+### La mascota no aparece en Linux con Wayland
 
-### Se oye un parpadeo o aparece un borde oscuro
+Prueba `QT_QPA_PLATFORM=wayland ./Bitty/Bitty` o, si falla, `QT_QPA_PLATFORM=xcb`. También puede hacer falta `libxcb` / `libxkbcommon`.
 
-Comprueba que los 21 PNG de `sprites\` están presentes y que no se ha escalado la ventana. Los sprites son de 64×64 y se dibujan a tamaño natural con `NearestNeighbor`.
+### El binario de macOS dice «dañado» o «no verificado»
+
+Es un binario firmado sin identificador de desarrollador. Clic derecho → **Open**, o **System Settings → Privacy & Security → Open Anyway**.
+
+### Los sprites salen con un cuadro oscuro
+
+Los PNG originales tienen fondo `0C0C0C`; el código lo convierte a transparente. Si ves un cuadro, comprueba que usas v2.0.0 y que la carpeta `resources/sprites` está completa (21 PNG).
 
 ### Quiero regenerar los sprites
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\src\generate-sprites.ps1
-```
+La versión PowerShell histórica incluye `generate-sprites.ps1` en `legacy/powershell/`. Detén Bitty antes de ejecutarlo: los PNG están abiertos.
 
-**Detén Bitty antes**: los PNG están abiertos y no se pueden sobrescribir.
+### Posición, pausa, sesión y tema
 
-### Bitty no recuerda dónde estaba
+Se guardan en:
 
-La posición se guarda en `%APPDATA%\BittyMascot\state.json` al moverla, pausar el paseo o cambiar de sesión. Si borras ese archivo, vuelve al centro.
+- Windows: `%APPDATA%\BittyMascot\state.json`
+- macOS/Linux: `~/.config/BittyMascot/state.json` (o `$XDG_CONFIG_HOME/BittyMascot/state.json`)
+
+Borrando ese archivo, Bitty vuelve al centro con el tema automático.
 
 ### Cambiar el directorio de trabajo de OpenCode
 
-Por defecto se usa tu carpeta de usuario (`%USERPROFILE%`). Si quieres que OpenCode trabaje en otro sitio, define antes de arrancar:
-
 ```powershell
-$env:BITTY_WORKDIR = 'C:\MisProyectos'
+$env:BITTY_WORKDIR = 'C:\MisProyectos'   # Windows
 ```
 
-Para que sea permanente, añade esa línea a tu perfil de PowerShell o configura el acceso directo para que la ejecute antes del script.
+```bash
+export BITTY_WORKDIR="$HOME/MisProyectos"  # macOS/Linux
+```
+
+Para hacerlo permanente, configura la variable en el perfil de tu shell o en el servicio/LaunchAgent.
 
 ## Desinstalar
 
@@ -84,4 +122,8 @@ Para que sea permanente, añade esa línea a tu perfil de PowerShell o configura
 powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
 ```
 
-Pregunta antes de borrar la carpeta instalada, la posición guardada y el agente.
+```bash
+bash uninstall.sh
+```
+
+Preguntan antes de borrar la carpeta instalada, la posición guardada y el agente.

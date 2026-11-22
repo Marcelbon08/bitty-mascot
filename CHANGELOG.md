@@ -6,6 +6,31 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.0.0] - 2026-11-23
+
+### Añadido
+- **Multiplataforma**: reescritura completa en **Python 3 + PySide6**. Bitty funciona ahora en Windows, macOS y Linux con un solo código.
+- **Temas**: `NAVIDAD` (gorro rojo con pompón y acento rojo) y `HALLOWEEN` (calabaza y acento naranja), además del original `OPENCODE` y el modo `AUTOMÁTICO` que elige según el mes (diciembre/octubre). Se cambian desde el menú derecho → **> TEMA**.
+- Los sprites se recolorizan en memoria con Pillow (21 PNG base, sin duplicados por tema) y el fondo `0C0C0C` pasa a alfa 0 para no dejar cuadro oscuro en Qt.
+- `build.py` + `.github/workflows/build.yml`: PyInstaller genera `Bitty-Windows.zip`, `Bitty-macOS.zip` y `Bitty-Linux.zip` al publicar un tag `v*`.
+- `install.sh` / `uninstall.sh` para macOS y Linux (venv, LaunchAgent en macOS, `systemd --user` en Linux).
+- `run_bitty.py`: entry point con import absoluto, necesario para PyInstaller.
+- Atajo `⌘+Alt+B` en macOS además de `Ctrl+Alt+B`.
+- Tecla `Esc` para cerrar el bocadillo.
+
+### Cambiado
+- La versión PowerShell v1 se movió a `legacy/powershell/` y queda solo como referencia histórica.
+- `requirements.txt` con PySide6, Pillow y pynput.
+- `state.json` portable: usa `APPDATA` en Windows y `XDG_CONFIG_HOME`/`~/.config` en macOS/Linux; guarda también el tema elegido.
+- README y `docs/INSTALACION.md` reescritos para los tres sistemas.
+
+### Corregido
+- Fondo opaco de los PNG: ahora se vuelve transparente en Qt.
+- El ejecutable empaquetado fallaba al arrancar por el import relativo de `bitty/__main__.py`; se usa `run_bitty.py`.
+- Los manejadores de archivos de salida se cierran en el proceso padre tras lanzar la CLI.
+
+---
+
 ## [1.8.1] - 2026-11-23
 
 ### Añadido

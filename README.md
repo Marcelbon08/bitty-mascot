@@ -1,18 +1,9 @@
 # Bitty Mascot
 
-> Una mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/) en Windows.
+> Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
+> **Windows · macOS · Linux** · v2.0.0
 
-Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Todo con la paleta oficial de OpenCode (blanco y negro con un pequeño acento azul).
-
----
-
-## Descarga rápida
-
-La última versión portable (v1.8.1) se puede descargar ya empaquetada:
-
-**[⬇️ Descargar bitty-mascot-v1.8.1.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v1.8.1/bitty-mascot-v1.8.1.zip)**
-
-Descomprime, entra en la carpeta y ejecuta `powershell -ExecutionPolicy Bypass -File .\install.ps1`. También puedes usar el botón verde **Code → Download ZIP** de este repositorio.
+Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
 ---
 
@@ -20,123 +11,171 @@ Descomprime, entra en la carpeta y ejecuta `powershell -ExecutionPolicy Bypass -
 
 **Este proyecto fue creado con inteligencia artificial (IA), bajo supervisión humana.**
 
-El código, los sprites, los textos y la documentación fueron generados con la ayuda de un asistente de IA y revisados por el autor. No es un producto oficial de OpenCode ni está afiliado a él. Úsalo bajo tu responsabilidad.
+El código, los sprites, los textos y la documentación fueron generados con ayuda de un asistente de IA y revisados y probados por el autor. **No es un producto oficial de OpenCode ni está afiliado a él.**
 
-Lee la declaración completa en **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
+Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 ---
 
+## Descarga
+
+Los binarios de los tres sistemas se generan automáticamente con GitHub Actions al publicar cada versión:
+
+| Sistema | Paquete |
+|---|---|
+| Windows | `Bitty-Windows.zip` → ejecuta `Bitty.exe` |
+| macOS | `Bitty-macOS.zip` → arrastra `Bitty.app` a Aplicaciones |
+| Linux | `Bitty-Linux.zip` → ejecuta `Bitty/Bitty` |
+
+👉 **[Última versión (v2.0.0)](https://github.com/Marcelbon08/bitty-mascot/releases/latest)**
+
+También puedes [descargar el código](https://github.com/Marcelbon08/bitty-mascot/archive/refs/heads/main.zip) e instalar desde fuente con Python.
+
+## Vista previa
+
+| OpenCode | Navidad | Halloween |
+|---|---|---|
+| ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
+
+![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.0.0
+
+- **Multiplataforma real**: reescrita en **Python + PySide6**. El mismo código corre en Windows, macOS y Linux.
+- **Temas de temporada**: `OPENCODE` (original), `NAVIDAD` (gorro rojo, acento rojo) y `HALLOWEEN` (calabaza, acento naranja). Modo `AUTOMÁTICO` por defecto: detecta el mes. Se cambia desde el menú derecho → **> TEMA**.
+- **Sin rutas fijas**: sprites junto al código, agente creado solo, `BITTY_WORKDIR` para elegir el directorio de trabajo.
+- **Binarios por CI**: `.github/workflows/build.yml` compila y publica los tres paquetes al subir un tag `v*`.
+
 ## ¿Qué hace?
 
-- **Siempre visible** (`TopMost`), sin marco ni borde, sobre cualquier ventana.
-- **Pasea sola** en un área pequeña alrededor del punto donde la dejas. Se puede arrastrar a cualquier monitor y el paseo se puede pausar desde el menú.
-- **Clic izquierdo** abre un bocadillo integrado: escribes y pulsas `Enter` o **ENVIAR** para hablar con OpenCode.
-- **Clic derecho** abre un menú propio (sin `MessageBox` de Windows): hablar, pausar/reanudar paseo, copiar respuesta, repetir último mensaje, volver al centro y salir.
-- **Identidad propia**: si le preguntas quién es, responde *«Soy Bitty, tu mascota de OpenCode»* gracias a un agente propio (`bitty.md`). No se identifica como el modelo de turno.
-- **Conversaciones con memoria**: tras la primera respuesta aparecen **SEGUIR** (misma conversación dentro de Bitty) y **ABRIR APP** (abre OpenCode en esa misma sesión).
-- **Sesiones bajo control**: **NUEVA** crea una sesión nueva; el desplegable elige una sesión anterior por su ID. **Nunca se usa `--continue`**, así que Bitty nunca se engancha a tu sesión activa.
-- **Respuestas completas y legibles**: el área de texto se dibuja con GDI (no es un `TextBox` de Windows), con scroll oscuro, rueda, flechas, `RePag`/`AvPag` y `Inicio`/`Fin`.
-- **21 expresiones** (feliz, sorpresa, duda, error, risa, triste, enfado, enamorada, gafas, cansada, curiosa, etc.) más dos frames de caminata. La cara se elige según el tono de la respuesta.
-- **Atajo global** `Ctrl+Alt+B` (o `Ctrl+Alt+J` si está ocupado) para abrir el bocadillo desde cualquier ventana.
-- **Historial** con `↑`/`↓`, **tooltip** y guardado de posición, pausa y sesión en `%APPDATA%\BittyMascot\state.json`.
-- **Portable**: no hay rutas de usuario grabadas. Detecta OpenCode, usa los sprites junto al script y crea su agente automáticamente.
+- Siempre visible (`WindowStaysOnTopHint`), sin marco ni halo, sobre cualquier ventana.
+- Pasea sola en un área pequeña; se arrastra a cualquier monitor y el paseo se puede pausar.
+- **Clic izquierdo**: bocadillo integrado; escribes y pulsas `Enter` o **ENVIAR**.
+- **Clic derecho**: menú propio (hablar, pausar paseo, copiar, repetir, centrar, **tema**, salir) — sin `MessageBox`.
+- **Identidad propia**: si le preguntas quién es, responde *«Soy Bitty, tu mascota de OpenCode»*.
+- **Memoria de conversación**: **SEGUIR** continúa en la misma sesión y **ABRIR APP** abre OpenCode en esa sesión. Nunca usa `--continue`.
+- Texto completo con scroll, rueda, flechas, `RePag`/`AvPag` e `Inicio`/`Fin`.
+- 21 expresiones + accesorios de temporada, reacción según el tono de la respuesta.
+- Atajo global `Ctrl+Alt+B` (en macOS también `⌘+Alt+B`), historial con `↑`/`↓`, tooltip y persistencia de posición, pausa, tema y sesión.
 
 ## Requisitos
 
-- Windows 10 u 11.
-- PowerShell 5.1 (viene incluido en Windows).
-- [OpenCode CLI](https://opencode.ai/docs/cli/) instalado y accesible. Se detecta automáticamente en:
-  - `%APPDATA%\npm\node_modules\@opencode\cli\bin\opencode.exe`
-  - `%LOCALAPPDATA%\npm\node_modules\@opencode\cli\bin\opencode.exe`
-  - `PATH` (si `opencode` es un ejecutable).
+- Windows 10/11, macOS 12+ o Linux con sesión gráfica (X11/Wayland con Qt).
+- Para **binarios**: ninguno, vienen empaquetados.
+- Para **instalar desde código**: Python 3.9+ y `pip`.
+- OpenCode CLI instalado y accesible. Se detecta en las rutas típicas y en `PATH`.
 
-## Instalación rápida
+## Instalación
 
-1. Descarga y extrae el ZIP de este repositorio.
-2. Abre **PowerShell** en la carpeta extraída.
-3. Ejecuta:
+### Desde los binarios (recomendado)
+
+Descarga el ZIP de tu sistema desde el [release](https://github.com/Marcelbon08/bitty-mascot/releases/latest):
+
+- **Windows**: extrae y ejecuta `Bitty.exe`. Para arrancar con Windows, usa `install.ps1` o crea un acceso directo en `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`.
+- **macOS**: extrae, arrastra `Bitty.app` a Aplicaciones. Si macOS la bloquea: `System Settings → Privacy & Security → Open Anyway`.
+- **Linux**: extrae y ejecuta `./Bitty/Bitty` (otorga permiso de ejecución si hace falta).
+
+### Desde el código
+
+Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-El instalador:
+macOS / Linux:
 
-- copia `src\` a `%LOCALAPPDATA%\BittyMascot`,
-- crea `~/.config/opencode/agents/bitty.md` si no existe,
-- crea un acceso directo en el **Inicio → Programas → Inicio** de Windows,
-- y arranca Bitty.
-
-Para desinstalar:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
+```bash
+bash install.sh          # añade arranque automático
+bash install.sh --no-autostart
 ```
 
-## Instalación manual
+El instalador crea un entorno virtual, instala dependencias, copia el agente `bitty.md` y configura el arranque automático (acceso directo en Windows, LaunchAgent en macOS, `systemd --user` en Linux).
 
-Copia la carpeta `src` completa (incluido `sprites\`) donde quieras y ejecuta:
+Manual:
 
-```powershell
-powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File .\src\bitty-mascot.ps1
+```bash
+python -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python -m bitty
 ```
 
-La mascota crea sola su agente en `~/.config/opencode/agents/bitty.md` si falta.
+Para desinstalar: `powershell -ExecutionPolicy Bypass -File .\uninstall.ps1` o `bash uninstall.sh`.
 
-Si OpenCode está en una ruta distinta, añade al script (o al entorno) la variable `BITTY_WORKDIR` para elegir el directorio de trabajo de OpenCode:
+### Directorio de trabajo de OpenCode
+
+Por defecto se usa tu carpeta de usuario. Cambia antes de arrancar:
 
 ```powershell
-$env:BITTY_WORKDIR = 'C:\MisProyectos'
+$env:BITTY_WORKDIR = 'C:\MisProyectos'   # Windows
+```
+
+```bash
+export BITTY_WORKDIR="$HOME/MisProyectos"  # macOS/Linux
 ```
 
 ## Uso
 
 | Acción | Resultado |
 |---|---|
-| Clic izquierdo en Bitty | Abre/cierra el bocadillo |
+| Clic izquierdo | Abre/cierra el bocadillo |
 | `Enter` o **ENVIAR** | Envía el mensaje a OpenCode |
+| `Esc` | Cierra el bocadillo y detiene la respuesta |
 | **SEGUIR** | Sigue hablando en la misma conversación |
 | **ABRIR APP** | Abre OpenCode en esa sesión |
-| **COPIAR** | Copia la última respuesta al portapapeles |
+| **COPIAR** | Copia la última respuesta |
 | **CANCELAR** | Detiene la respuesta en curso |
-| Rueda / flechas en el panel | Recorre la respuesta larga |
-| `↑` / `↓` en el campo | Historial de mensajes |
-| `Esc` | Cierra el bocadillo |
-| Clic derecho | Menú integrado |
+| Rueda / flechas | Recorre la respuesta larga |
+| `↑` / `↓` | Historial de mensajes |
+| Clic derecho | Menú integrado (incluye **> TEMA**) |
 | Arrastrar | Mueve a Bitty por todas las pantallas |
-| `Ctrl+Alt+B` | Abre el bocadillo desde cualquier ventana |
+| `Ctrl+Alt+B` / `⌘+Alt+B` | Abre el bocadillo desde cualquier ventana |
 
-Las respuestas se muestran 60 segundos; los avisos cortos, 9 segundos.
+Las respuestas reales se muestran **60 s**; los avisos cortos, **9 s**.
+
+## Temas
+
+| Tema | Cuándo | Cambios |
+|---|---|---|
+| `AUTOMÁTICO` | Por defecto | Diciembre → Navidad, octubre → Halloween, resto → OpenCode |
+| `OPENCODE` | Manual | Paleta original en escala de grises con acento azul `#6B8FFF` |
+| `NAVIDAD` | Manual/automático | Gorro rojo y pompón, acento rojo, saludo navideño |
+| `HALLOWEEN` | Manual/automático | Calabaza sobre la terminal, acento naranja, saludo de truco o trato |
+
+Los 21 sprites base se recolorizan en memoria; no hay 63 PNG duplicados.
 
 ## Estructura
 
 ```
 bitty-mascot/
-├── src/
-│   ├── bitty-mascot.ps1        # Script principal (UI, sesiones, scroll GDI)
-│   ├── generate-sprites.ps1    # Generador de los 21 sprites
-│   ├── bitty.ico               # Icono del acceso directo
-│   ├── LEEME.txt               # Guía rápida en español
-│   └── sprites/bitty-*.png     # 21 expresiones 64×64
-├── agent/bitty.md               # Contexto de la identidad de Bitty
-├── docs/INSTALACION.md          # Instalación detallada y solución de problemas
-├── install.ps1                  # Instalador
-├── uninstall.ps1                # Desinstalador
-├── CHANGELOG.md                 # Todos los cambios y versiones
-├── AI_DISCLOSURE.md             # Declaración de uso de IA
-├── LEEME.txt                    # Guía rápida (copia de src)
-└── LICENSE                      # MIT
+├── bitty/                    # Código multiplataforma
+│   ├── app.py                # Ventana Qt, bocadillo, paseo, menú
+│   ├── themes.py             # Paletas, accesorios y tema automático
+│   ├── opencode.py           # CLI, agente, sesiones y parseo JSON
+│   ├── state.py              # Persistencia portable
+│   └── resources/            # 21 sprites + icono
+├── agent/bitty.md            # Identidad de Bitty
+├── run_bitty.py              # Entry point para PyInstaller
+├── build.py                  # Empaquetado local
+├── requirements.txt
+├── install.ps1 / install.sh  # Instaladores
+├── uninstall.ps1 / uninstall.sh
+├── .github/workflows/build.yml
+├── docs/INSTALACION.md
+├── legacy/powershell/        # Versión v1 original (solo histórico)
+├── CHANGELOG.md
+├── AI_DISCLOSURE.md
+└── LICENSE                   # MIT
 ```
 
 ## Desarrollo
 
-Para regenerar los sprites:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\src\generate-sprites.ps1
+```bash
+pip install -r requirements.txt pyinstaller
+python -m bitty
+python build.py     # genera dist/Bitty o dist/Bitty.app
 ```
-
-> Detén Bitty antes de regenerar: los PNG están abiertos y no se pueden sobrescribir.
 
 ## Licencia
 

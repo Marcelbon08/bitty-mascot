@@ -1,157 +1,37 @@
-BITTY - mascota flotante de OpenCode (estilo oficial, pixelada)
-===============================================================
+BITTY MASCOT v2.0.0 - mascota flotante de OpenCode
+==================================================
 
 HECHO CON IA: codigo, sprites y documentacion generados con inteligencia
 artificial y revisados por marce. No es un producto oficial de OpenCode.
-Ver README.md y AI_DISCLOSURE.md en la raiz del repositorio.
+Ver README.md y AI_DISCLOSURE.md.
 
-VERSION PORTABLE: esta copia no tiene rutas de usuario grabadas. Los sprites
-se buscan junto al script, OpenCode se detecta solo y el agente bitty.md se
-crea automaticamente si no existe.
+NOVEDAD v2: funciona en Windows, macOS y Linux (Python + PySide6).
+Temas: OPENCODE, NAVIDAD y HALLOWEEN, ademas de AUTOMATICO (diciembre
+navidad, octubre halloween). Cambialos con clic derecho > TEMA.
 
-Diseno
-------
-Bitty es un mini terminal con la misma franja gris del logo de OpenCode.
-Usa unicamente la paleta oficial de OpenCode para tema oscuro:
-  0C0C0C fondo   161616 panel   4B4B4B bordes/sombra
-  AEAEAE texto    EEEEEE trazo   FAFAFA enfasis   6B8FFF acento
-Sin degradados, sin brillos, sin sombras y con esquinas cuadras.
-Los sprites son de 64x64 y se dibujan a tamano natural, sin escalar:
-asi no aparece el borde oscuro alrededor del personaje.
+INSTALACION RAPIDA
+------------------
+Windows:  powershell -ExecutionPolicy Bypass -File .\install.ps1
+Mac/Linux: bash install.sh
 
-Comportamiento
---------------
-- No gira. Puedes arrastrarla a cualquier parte del escritorio. Una vez
-  suelta, pasea sola dentro de un cuadro pequeno (~32x24 px) alrededor
-  del punto donde la dejaste. El paseo se pausa mientras la arrastras.
-- Bitty lleva su nombre: "BITTY" aparece en una placa diminuta debajo del
-  sprite cuando esta en reposo, y la cabecera del bocadillo dice
-  "> BITTY / OPENCODE" (se mantiene asi la identidad OpenCode).
-- Expresion por defecto: neutral, pero NO se queda siempre asi: parpadea
-  cada 8 s y cada 24 s enseña una cara distinta durante 2,4 s (feliz,
-  curiosa, guiño, gafas, cansada, enamorada, satisfecha o aburrida).
-  Mientras espera la respuesta va pasando entre pensar, dudar, curiosidad
-  y cansancio, en vez de quedarse quieta con una sola cara.
-- Clic izquierdo: bocadillo integrado con cabecera de terminal
-  ("> BITTY / OPENCODE" sobre fondo 1A1A1A y separador), una fila "SESION:"
-  con los botones
-  "NUEVA" y "CONTINUAR", campo de texto, y los botones "ENVIAR" y
-  "SALIR" (mismo tamano, borde 4B4B4B; cierra sin enviar). Escape hace
-  lo mismo que SALIR. El cuadro activo lleva una fina linea azul 6B8FFF,
-  el unico acento de la paleta. La cola del bocadillo tambien tiene borde.
-- SESION:
-    NUEVA            -> opencode run "<mensaje>"  (sesion nueva)
-    (ultima: titulo) -> opencode run --session <id> "<mensaje>"
-    <titulo sesion>  -> opencode run --session <id> "<mensaje>"
-  Por defecto esta seleccionado NUEVA, asi que Bitty nunca se engancha a
-  la conversacion que tengas abierta. Si eliges una sesion anterior,
-  va exactamente a esa. No se usa --continue en ningun caso.
-  En lugar de un boton CONTINUAR hay un desplegable pequeno que se
-  rellena con las 8 sesiones mas recientes cada vez que abres el
-  bocadillo (muestra el titulo, recortado si es largo).
-  El boton NUEVA se ilumina en blanco FAFAFA cuando esta activo; al
-  elegir una sesion del desplegable, este pasa a texto blanco.
-  Si no hay sesion anterior, Bitty lo avisa con la cara de duda en
-  lugar de fallar.
-- Contexto propio: los mensajes se envian con `--agent bitty`, definido en
-  ~/.config/opencode/agents/bitty.md. Asi, si le preguntas quien es,
-  responde "Soy Bitty, tu mascota de OpenCode" en vez de decir que es otro
-  asistente o modelo. Esto no afecta a tus sesiones normales.
-- Mientras espera: cara pensando y boton "CANCELAR" (mata el proceso de
-  OpenCode, pone cara de duda con "< Cancelado." y vuelve a pasear).
-- Sincronizacion: si cierras el bocadillo con SALIR/Escape/otro clic, o
-  envias otro mensaje, o sales con el menu, la espera se cancela tambien
-  en OpenCode (se mata el proceso hijo). Asi la mascota y OpenCode nunca
-  se descompensan. Probado: al pulsar SALIR mientras esperaba, el proceso
-  de OpenCode murio.
-- El bocadillo de respuesta muestra los 2 ultimos mensajes en formato
-  mini terminal: "> tu mensaje" y "< respuesta de OpenCode". El texto ya
-  NO se recorta: antes se cortaba a 100 caracteres y ponia "..", ahora se
-  ve completo. El panel crece a 340x300 y el texto va en un area de 296x142
-  con ajuste de linea, asi que puedes leer respuestas largas enteras.
-- Ese area YA NO es un scroll blanco de Windows: estaba pintado con el
-  tema claro del sistema y no habia forma de teñirlo. Ahora el texto y la
-  barra se dibujan con GDI usando la paleta de OpenCode (fondo 161616,
-  texto FAFAFA, barra 4B4B4B). El cuadro ya no parece un control ajeno.
-- Puedes recorrer la respuesta con la rueda del raton, con las flechas
-  Arriba/Abajo, RePag/AvPag, Inicio/Fin, o haciendo clic en la barra oscura.
-  Escape la cierra. Hacer clic sobre el texto no arrastra la mascota.
-- Los botones de respuesta (SEGUIR / ABRIR APP / COPIAR / CANCELAR / SALIR)
-  se situran debajo del panel (fila y=222), no encima del texto. En modo
-  input siguen junto al campo (fila y=56). Asi el texto nunca queda tapado.
-- Boton "COPIAR": copia la ultima respuesta al portapapeles. Aparece
-  siempre que hay una respuesta y no se esta esperando.
-- Una respuesta real se queda visible 60 segundos (los avisos cortos, 9 s)
-  para que tengas tiempo de leerla y pulsar SEGUIR o ABRIR APP. Antes se
-  cerraba a los 9 s y no daba tiempo a seguir hablando.
-- Boton "SEGUIR": vuelve al campo de texto dentro de la MISMA conversacion,
-  usando el ID de sesion que OpenCode devuelve en --format json. Asi puedes
-  hacer una primera pregunta y seguir hablando sin perder el contexto
-  (probado: recuerda lo que le dijiste dos mensajes antes).
-- Boton "ABRIR APP": abre la aplicacion de OpenCode en esa misma sesion,
-  para continuar la conversacion con todas las comodidades del escritorio.
-  Es mas ancho que los demas (88 px) para que "ABRIR APP" no quede estrecho.
-  Si todavia no hay respuesta, SEGUIR y ABRIR APP no aparecen.
-- Cuando aparecen SEGUIR / ABRIR APP / COPIAR, Bitty baja 22 px dentro del
-  bocadillo (el formulario crece de 300 a 322 px de alto). Asi el sprite
-  (y=252..316) queda justo debajo de los botones (y=222..250), sin que se
-  pisen. La ventana crece hacia abajo y el sprite sigue en el mismo punto de
-  la pantalla, asi que no da un salto al recibir la respuesta.
-- Desplegable sin duplicados: la primera opcion dice "(ultima: <titulo>)"
-  para saber cual es, y si dos titulos recortados coinciden se distinguen
-  con los ultimos 4 caracteres del ID (ej. "Nuevas skins de Min... #a1b2").
-- Area multi-monitor: Bitty se puede arrastrar y pasear por el rectangulo
-  que cubre todas las pantallas conectadas, no solo la principal.
-- Las respuestas y los titulos de sesion se leen como UTF-8, asi que los
-  acentos salen bien (no aparece el tipico "Ã³" con virgulilla).
-- El parpadeo es un guiño corto (240 ms cada 8 s), no un cambio de cara
-  continuo. La ventana usa doble buffer para no parpadear al repintarse.
-- Reacciones (21 sprites en total): celebracion, sorpresa, duda, error,
-  feliz, risa, triste, enfado, enamorada, guiño, gafas, cansada, asustada,
-  curiosa, satisfecha, aburrida, pensando, normal, parpadeo y los dos
-  frames de caminata (walk1/walk2), que se alternan mientras pasea.
-  La cara se elige segun el tono de la respuesta (y del mensaje enviado):
-  si dice "sin errores" celebra, si hay un error pone cara de error, si
-  pregunta pone cara curiosa, si da las gracias se enamora, si hay risa se
-  rie, si esta enfadada se enfada, etc. Se mira primero la respuesta y
-  despues el mensaje. Si no encaja nada, usa la curiosa (no la neutral).
-  El bocadillo se cierra solo (avisos a los 9 s, respuestas a los 60 s) o con
-   "Salir"/otro clic.
-- Arrastrar: mover por todo el escritorio (todas las pantallas).
-- Clic derecho: menu integrado (no sale un MessageBox de Windows):
-    > HABLAR                  abre el bocadillo
-    > PAUSAR PASEO            deja a Bitty quieta / REANUDAR PASEO
-    > COPIAR RESPUESTA        copia la ultima respuesta al portapapeles
-    > REPETIR ULTIMO MENSAJE  vuelve a enviar el ultimo prompt
-    > VOLVER AL CENTRO        lleva a Bitty al centro de la pantalla principal
-    > SALIR DE BITTY          cierra la mascota (y cancela si esta esperando)
-- Atajo global: Ctrl+Alt+B abre el bocadillo desde cualquier ventana (si
-  otra aplicacion ya usa esa combinacion, Bitty prueba otros IDs y, como
-  ultimo recurso, Ctrl+Alt+J). El tooltip de la mascota lo indica.
-- Historial: dentro del campo de texto, Arriba/Abajo recorren los ultimos
-  30 mensajes enviados, como en un terminal. Al abrir, el campo ya tiene
-  el foco, asi que puedes escribir o pulsar Arriba sin hacer nada mas.
-- Bitty guarda en %APPDATA%\BittyMascot\state.json la posicion, si el
-  paseo esta pausado y la sesion elegida. Al reiniciar vuelve a donde
-  la dejaste, sin perder esos ajustes.
-- Al arrancar saluda con una cara feliz durante 4 segundos, para que se
-  vea enseguida que esta viva.
-- El area de pantallas se calcula una sola vez al arrancar para no
-  saturar el hilo de interfaz.
+O descarga el binario de tu sistema desde:
+https://github.com/Marcelbon08/bitty-mascot/releases/latest
 
-Archivos
---------
-  bitty-mascot.ps1        script principal
-  generate-sprites.ps1    generador de los 21 sprites OpenCode
-  sprites\bitty-*.png     21 expresiones (64x64)
-  bitty.ico               icono del acceso directo
+USO
+---
+Clic izquierdo .... abre el bocadillo
+Enter / ENVIAR ... habla con OpenCode
+Esc .............. cierra el bocadillo
+SEGUIR ........... continua la misma conversacion
+ABRIR APP ........ abre OpenCode en esa sesion
+COPIAR ........... copia la respuesta
+CANCELAR ......... detiene la respuesta
+Clic derecho ..... menu (pausar paseo, tema, salir...)
+Ctrl+Alt+B ....... abre el bocadillo desde cualquier ventana
+(macOS tambien ⌘+Alt+B)
 
-Inicio automatico
------------------
-%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Bitty Mascot.lnk
+Arrastra a Bitty para moverla; pasea sola y se puede pausar desde el menu.
+Si le preguntas quien es, responde: "Soy Bitty, tu mascota de OpenCode".
 
-Modificar el diseno
--------------------
-IMPORTANTE: deten Bitty (clic derecho -> Salir) antes de ejecutar
-generate-sprites.ps1, porque los PNG estan abiertos y no se pueden
-sobrescribir. Luego vuelve a iniciar Bitty.
+La version PowerShell original queda en legacy\powershell\ como historico.
+Ver CHANGELOG.md para todos los cambios y docs\INSTALACION.md para ayuda.
