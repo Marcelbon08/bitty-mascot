@@ -32,3 +32,10 @@ Lista viva de mejoras de Bitty, ordenada por prioridad. Lo ya publicado queda en
 ### 11. Tema y sonido
 
 - Los temas Navidad/Halloween/Automático ya existen en la mascota flotante. Estudiar un sonido muy suave y opcional (desactivado por defecto) para eventos como `PERMISO` o `ERROR`.
+
+### 12. Cursor virtual de Bitty (idea de Marcelbon, sin decidir)
+
+- Idea: Bitty tendría un «cursor» propio para editar cosas en el ordenador o en el navegador.
+- **En el navegador ya es posible sin escribir un cursor nuevo**: el MCP de Playwright mueve el foco, hace clic y escribe en campos de la página controlada. La mejora sería visual: resaltar el elemento que Bitty va a tocar y pedir confirmación antes de cada acción.
+- **En el escritorio real es delicado**: inyectar ratón/teclado con `pynput` puede afectar a cualquier ventana (incluida la terminal del usuario) y rompe la promesa de «solo sugiere, nunca escribe ni interrumpe». Además, macOS pide permiso de Accesibilidad y Wayland limita la inyección de eventos.
+- Propuesta segura si se decide hacerlo: modo explícito y desactivado por defecto, permiso nativo **cada vez**, indicación visible del objetivo, límite de duración y un atajo de cancelación inmediata. Nunca actuar sobre ventanas ajenas sin confirmación.
