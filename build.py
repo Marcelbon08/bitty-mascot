@@ -58,6 +58,17 @@ def main() -> int:
     for module in UNUSED_MODULES:
         cmd += ["--exclude-module", module]
 
+    # PySide6 6.5+ necesita libxcb-cursor para cargar el plugin xcb en Linux.
+    # Lo incluimos en el bundle para que el binario funcione sin instalar nada.
+    if sys.platform == "linux":
+        for candidate in (
+            "/usr/lib/x86_64-linux-gnu/libxcb-cursor.so.0",
+            "/usr/lib64/libxcb-cursor.so.0",
+        ):
+            if Path(candidate).exists():
+                cmd += ["--add-binary", f"{candidate}:."]
+                break
+
     print(" ".join(cmd))
     env = dict(os.environ)
     result = subprocess.run(cmd, cwd=str(ROOT), env=env)

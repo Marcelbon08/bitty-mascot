@@ -54,7 +54,11 @@ jobs:
           python-version: '3.12'
 
       - name: Instalar dependencias
+        shell: bash
         run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y libxcb-cursor0
+          fi
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pyinstaller
 
@@ -112,6 +116,7 @@ jobs:
       - name: Probar arranque real en Fedora (Xvfb)
         run: |
           code=0
+          export LD_LIBRARY_PATH="/usr/lib64:${LD_LIBRARY_PATH:-}"
           timeout 20s xvfb-run -a dist/Bitty/Bitty > bitty-smoke.log 2>&1 || code=$?
           cat bitty-smoke.log || true
           if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
