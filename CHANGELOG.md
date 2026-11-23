@@ -6,6 +6,26 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.1.0] - 2026-11-23
+
+### Añadido
+- **Bitty como plugin de OpenCode**, con las tres partes en un mismo paquete: servidor (`src/index.ts`), terminal (`src/tui.tsx`) y Desktop (`src/gui.tsx`).
+- **Integración estilo Claude Code**: indicador permanente en la barra del prompt de la TUI, panel de mascota, comando `bitty.panel` con `Ctrl+Alt+B` y `/bitty`; en Desktop, panel lateral, píldora del composer, entrada en el menú, comando con `Mod+Alt+B` y presencia en la barra inferior.
+- **Mascota reactiva**: 8 caras ASCII (`HI`, `PIENSA`, `TOOL`, `ESCRIBE`, `LISTO`, `ERROR`, `PERMISO`, `ZZZ`) traducidas desde eventos reales de OpenCode (`session.*`, `permission.*`, `form.created`), con retorno automático a `HI`.
+- `plugin/gui-dist/gui-experimental.cjs` versionado y `scripts/copy-bundle.mjs` para regenerarlo tras `npm run build`.
+- `plugin/README.md` con instalación en `cli.json` (terminal) y `opencode.jsonc` (Desktop), tabla de eventos y comprobación de carga.
+- `node_modules/` añadido a `.gitignore`.
+
+### Verificado
+- `npm run build` y `npm run typecheck` pasan con `@opencode/plugin` 2.3.2 y OpenCode 2.3.2.
+- Logs de `--standalone --print-logs --log-level debug`: el servidor carga `src/index.ts` y `gui-dist/gui-experimental.cjs`.
+- Prueba en PTY de la TUI: aparece `Bitty [o_o] HI` en inicio y prompt, se observa la secuencia `PIENSA → ESCRIBE/TOOL → LISTO` al enviar un mensaje y `/bitty` abre el panel dentro de una sesión.
+
+### Nota
+- Los binarios de la mascota flotante no cambian; los ZIP de este release son los mismos de v2.0.1. La GUI de Desktop no se pudo probar visualmente porque la app no está instalada en el equipo de desarrollo.
+
+---
+
 ## [2.0.1] - 2026-11-23
 
 ### Cambiado

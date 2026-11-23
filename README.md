@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux** · v2.0.1
+> **Windows · macOS · Linux** · v2.1.0
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,15 +22,36 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios de los tres sistemas se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.0.1 |
+| Sistema | Descarga directa v2.1.0 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.0.1/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.0.1/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.0.1/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.1.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.1.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.1.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
 
-👉 **[Página del release v2.0.1](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.0.1)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.1.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.1.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 También puedes [descargar el código](https://github.com/Marcelbon08/bitty-mascot/archive/refs/heads/main.zip) e instalar desde fuente con Python.
+
+## Bitty dentro de OpenCode (nuevo en v2.1.0)
+
+Además de la mascota flotante, Bitty es ahora un **plugin de OpenCode**: vive en la terminal y en OpenCode Desktop, como una integración al estilo de la mascota de Claude Code.
+
+- **Terminal**: indicador permanente `Bitty [o_o] HI` en la barra del prompt y panel completo con `Ctrl+Alt+B`, `/bitty` o la paleta de comandos.
+- **Desktop**: panel lateral **Bitty**, píldora junto al composer y presencia en la barra inferior. Se abre con `Mod+Alt+B` o `/bitty`.
+- **Mascota viva**: cambia de cara con los eventos reales de la sesión: `HI → PIENSA → ESCRIBE/TOOL → LISTO`, además de `ERROR`, `PERMISO` y `ZZZ`.
+- **Misma identidad**: sigue siendo *«Soy Bitty, tu mascota de OpenCode»* y trata a **Marcelbon** por su nombre.
+
+Instalación y detalle de eventos: **[plugin/README.md](plugin/README.md)**. Requiere OpenCode v2.3.2+.
+
+```jsonc
+// ~/.config/opencode/cli.json (terminal)
+{ "plugins": ["C:/Users/marce/Downloads/bitty-mascot/plugin"] }
+
+// ~/.config/opencode/opencode.jsonc (Desktop)
+{ "plugins": ["C:/Users/marce/Downloads/bitty-mascot/plugin"] }
+```
+
+> Los binarios de escritorio siguen siendo idénticos a los de v2.0.1; esta versión añade el plugin sin cambios en la app flotante.
 
 ## Vista previa
 
@@ -39,6 +60,13 @@ También puedes [descargar el código](https://github.com/Marcelbon08/bitty-masc
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.1.0
+
+- **Bitty dentro de OpenCode**: plugin con parte servidor, parte TUI y parte Desktop en un solo paquete (`plugin/`).
+- **Integración estilo Claude Code**: mascota siempre visible en la terminal y en la app de escritorio, con panel, comando, atajo y píldora.
+- **Reactiva de verdad**: ocho caras gobernadas por los eventos `session.*`, `permission.*` y `form.created`, con retorno automático a `HI`.
+- **Bundle versionado**: `plugin/gui-dist/gui-experimental.cjs` se genera con `npm run build` y se incluye en el repo.
 
 ## Novedades de v2.0.0
 
@@ -157,6 +185,12 @@ bitty-mascot/
 │   ├── state.py              # Persistencia portable
 │   └── resources/            # 21 sprites + icono
 ├── agent/bitty.md            # Identidad de Bitty
+├── plugin/                   # Plugin para OpenCode TUI y Desktop (v2.1.0)
+│   ├── src/index.ts          # Parte servidor
+│   ├── src/tui.tsx           # Parte terminal
+│   ├── src/gui.tsx           # Parte Desktop
+│   ├── src/shared/faces.ts   # Caras y eventos compartidos
+│   └── gui-dist/             # Bundle GUI versionado
 ├── run_bitty.py              # Entry point para PyInstaller
 ├── build.py                  # Empaquetado local
 ├── requirements.txt
@@ -176,6 +210,11 @@ bitty-mascot/
 pip install -r requirements.txt pyinstaller
 python -m bitty
 python build.py     # genera dist/Bitty o dist/Bitty.app
+
+cd plugin
+npm install
+npm run build       # genera el bundle GUI en plugin/gui-dist/
+npm run typecheck
 ```
 
 ## Licencia

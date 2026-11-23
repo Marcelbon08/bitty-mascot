@@ -4,14 +4,14 @@
 
 ## Qué significa
 
-- El código original en PowerShell (`legacy/powershell/`), la reescritura multiplataforma en Python/PySide6 (`bitty/`), los sprites, los textos de la interfaz, la documentación, los instaladores y el workflow de compilación fueron **generados con la ayuda de un asistente de IA**.
-- El autor (**Marcelbon**) revisó, probó y ajustó el resultado en su equipo: se verificó la sintaxis, el comportamiento de la interfaz, la lectura UTF-8, las sesiones de OpenCode, el flujo completo de conversación (incluida la identidad «Soy Bitty...»), los tres temas y el ejecutable empaquetado de Windows. Los paquetes de macOS y Linux se generan en GitHub Actions y no han sido probados en hardware por el autor.
+- El código original en PowerShell (`legacy/powershell/`), la reescritura multiplataforma en Python/PySide6 (`bitty/`), el plugin para OpenCode TUI y Desktop (`plugin/`), los sprites, los textos de la interfaz, la documentación, los instaladores y el workflow de compilación fueron **generados con la ayuda de un asistente de IA**.
+- El autor (**Marcelbon**) revisó, probó y ajustó el resultado en su equipo: se verificó la sintaxis, el comportamiento de la interfaz, la lectura UTF-8, las sesiones de OpenCode, el flujo completo de conversación (incluida la identidad «Soy Bitty...»), los tres temas y el ejecutable empaquetado de Windows. El plugin se validó con `npm run build`, `npm run typecheck`, logs de carga del servidor y una prueba en PTY de la TUI con reacciones a eventos. La GUI de Desktop solo se validó de forma estructural: la app no está instalada en el equipo del autor. Los paquetes de macOS y Linux se generan en GitHub Actions y no han sido probados en hardware por el autor.
 - Los sprites son **dibujados por código** por `generate-sprites.ps1` (GDI+, 64×64, sin assets externos). No se usaron imágenes de terceros.
 
 ## Qué no es
 
 - **No es un producto oficial de OpenCode** y no está afiliado, patrocinado ni respaldado por OpenCode AI.
-- No contiene código copiado de OpenCode; solo llama a su CLI pública (`opencode run`) con los argumentos documentados.
+- No contiene código copiado de OpenCode; usa su CLI pública (`opencode run`) y los puntos de extensión documentados de plugins (`@opencode/plugin`) con los argumentos y APIs públicos.
 - No recopila datos ni envía información a ningún servidor propio: todo pasa por la instalación local de OpenCode del usuario.
 
 ## Responsabilidad
