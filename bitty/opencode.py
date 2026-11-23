@@ -5,11 +5,24 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
+
+
+# Un ID de sesión nunca debe poder convertirse en una bandera de la CLI.
+_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_-]{0,127}$")
+_TEMP_PREFIX = "bitty-opencode-"
+
+
+def safe_session_id(value: object) -> str:
+    """Devuelve el ID solo si es un identificador inofensivo para la CLI."""
+    text = str(value or "")
+    return text if _SESSION_ID_RE.fullmatch(text) else ""
 
 
 AGENT_TEXT = """---
@@ -92,23 +105,44 @@ def list_sessions(exe: str, limit: int = 8) -> list[dict]:
     return []
 
 
+def _cleanup_stale_temp_dirs(max_age_seconds: int = 86400) -> None:
+    """Borra directorios temporales abandonados por ejecuciones anteriores."""
+    try:
+        now = time.time()
+        for path in Path(tempfile.gettempdir()).glob(_TEMP_PREFIX + "*"):
+            if not path.is_dir():
+                continue
+            try:
+                if now - path.stat().st_mtime > max_age_seconds:
+                    shutil.rmtree(path, ignore_errors=True)
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+
+def _new_temp_paths() -> tuple[Path, Path, Path]:
+    """Crea un directorio privado para la salida, evitando nombres predecibles."""
+    base = Path(tempfile.mkdtemp(prefix=_TEMP_PREFIX))
+    return base, base / "out.txt", base / "err.txt"
+
+
 def send_message(exe: str, text: str, session_id: str = "") -> tuple[subprocess.Popen, Path, Path]:
     """Lanza `opencode run` y devuelve (proceso, salida, errores).
 
     Nunca usa --continue: o crea sesión nueva o va a un ID concreto.
     """
-    out = Path(tempfile.gettempdir()) / "bitty-opencode-out.txt"
-    err = Path(tempfile.gettempdir()) / "bitty-opencode-err.txt"
-    for path in (out, err):
-        try:
-            path.write_text("", encoding="utf-8")
-        except OSError:
-            pass
+    _base, out, err = _new_temp_paths()
 
     title = "BITTY " + _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     args = [exe, "run", "--agent", "bitty", "--title", title, "--format", "json"]
-    if session_id:
-        args += ["--session", session_id]
+    safe_id = safe_session_id(session_id)
+    if safe_id:
+        args += ["--session", safe_id]
+    # Un mensaje que empieza por '-' podría leerse como opción: lo protegemos
+    # con el separador estándar de fin de opciones.
+    if text.startswith("-"):
+        args.append("--")
     args.append(text)
 
     handle_out = out.open("wb")
@@ -130,9 +164,12 @@ def send_message(exe: str, text: str, session_id: str = "") -> tuple[subprocess.
 
 
 def open_app(exe: str, session_id: str) -> bool:
+    safe_id = safe_session_id(session_id)
+    if not safe_id:
+        return False
     try:
         subprocess.Popen(
-            [exe, "--session", session_id],
+            [exe, "--session", safe_id],
             cwd=working_dir(),
             creationflags=_no_window_flags(),
         )

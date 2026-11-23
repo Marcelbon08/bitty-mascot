@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
+
+
+_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_-]{0,127}$")
 
 
 def config_dir() -> Path:
@@ -43,6 +47,19 @@ def load() -> dict:
         data["theme"] = "auto"
     if data.get("session_mode") not in ("new", "continue"):
         data["session_mode"] = "new"
+
+    # Un state.json manipulado no debe poder introducir valores raros en la
+    # interfaz ni en los argumentos del ejecutable de OpenCode.
+    sid = data.get("session_id")
+    if not isinstance(sid, str) or not _SESSION_ID_RE.fullmatch(sid):
+        data["session_id"] = ""
+    label = data.get("session_label")
+    data["session_label"] = label[:80] if isinstance(label, str) else ""
+    data["roam_paused"] = bool(data.get("roam_paused"))
+    for axis in ("x", "y"):
+        value = data.get(axis)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            data[axis] = None
     return data
 
 

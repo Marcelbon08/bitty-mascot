@@ -1,6 +1,6 @@
 {
   "name": "opencode-bitty-plugin",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Bitty, la mascota reactiva de OpenCode, dentro de la terminal y de OpenCode Desktop",
   "type": "module",
   "exports": {
@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "build": "vite build && node scripts/copy-bundle.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:alpha": "tsc src/shared/install.ts src/shared/capacities.ts src/shared/scan.ts --module commonjs --target es2022 --outDir .alpha-build --skipLibCheck --esModuleInterop && node tests/alpha.test.cjs"
   },
   "dependencies": {
     "@opencode/plugin": "^2.3.2",

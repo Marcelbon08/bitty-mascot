@@ -1,0 +1,140 @@
+"""Alpha tests de Bitty: ejecución segura de OpenCode y estado persistido."""
+
+from __future__ import annotations
+
+import json
+import os
+import stat
+import sys
+import tempfile
+import time
+import unittest
+from pathlib import Path
+from unittest import mock
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from bitty import opencode, state  # noqa: E402
+
+
+class OpenCodeSecurityTests(unittest.TestCase):
+    def test_send_message_never_uses_shell_or_continue(self) -> None:
+        with mock.patch.object(opencode.subprocess, "Popen") as popen:
+            out, err = None, None
+            proc, out, err = opencode.send_message("opencode", "hola Bitty", "ses_123")
+            self.assertIs(proc, popen.return_value)
+            args, kwargs = popen.call_args
+            self.assertEqual(args[0][1], "run")
+            self.assertNotIn("--continue", args[0])
+            self.assertNotIn("-c", args[0])
+            self.assertIn("--session", args[0])
+            self.assertEqual(args[0][args[0].index("--session") + 1], "ses_123")
+            self.assertEqual(args[0][-1], "hola Bitty")
+            self.assertFalse(kwargs.get("shell", False))
+            self.assertIn("cwd", kwargs)
+
+            # La salida vive en un directorio privado y distinto por llamada.
+            self.assertEqual(out.parent, err.parent)
+            self.assertTrue(out.parent.name.startswith(opencode._TEMP_PREFIX))
+            self.assertTrue(out.parent.is_dir())
+            self.assertNotEqual(out, opencode._new_temp_paths()[1])
+
+    def test_prompt_starting_with_dash_is_protected(self) -> None:
+        with mock.patch.object(opencode.subprocess, "Popen") as popen:
+            opencode.send_message("opencode", "-hola")
+            args = popen.call_args.args[0]
+            self.assertEqual(args[-2:], ["--", "-hola"])
+            self.assertNotIn("--session", args)
+
+    def test_unsafe_session_id_is_never_forwarded(self) -> None:
+        for bad in ("--auto", "-h", "--session=x", "a b", "x" * 200, "ses;id"):
+            with self.subTest(bad=bad), mock.patch.object(opencode.subprocess, "Popen") as popen:
+                opencode.send_message("opencode", "hola", bad)
+                args = popen.call_args.args[0]
+                self.assertNotIn(bad, args)
+                self.assertNotIn("--session", args)
+
+    def test_open_app_rejects_unsafe_session_id(self) -> None:
+        with mock.patch.object(opencode.subprocess, "Popen") as popen:
+            self.assertFalse(opencode.open_app("opencode", "--auto"))
+            popen.assert_not_called()
+            self.assertTrue(opencode.open_app("opencode", "ses_123"))
+            self.assertEqual(popen.call_args.args[0][-2:], ["--session", "ses_123"])
+
+    def test_temp_dirs_are_unique_and_private(self) -> None:
+        first, out1, err1 = opencode._new_temp_paths()
+        second, out2, err2 = opencode._new_temp_paths()
+        self.assertNotEqual(first, second)
+        self.assertNotEqual(out1, out2)
+        self.assertNotEqual(err1, err2)
+        if os.name == "posix":
+            self.assertEqual(stat.S_IMODE(first.stat().st_mode), 0o700)
+
+    def test_stale_temp_dirs_are_cleaned_but_recent_are_kept(self) -> None:
+        base = Path(tempfile.gettempdir())
+        stale = base / (opencode._TEMP_PREFIX + "alpha-stale")
+        recent = base / (opencode._TEMP_PREFIX + "alpha-recent")
+        stale.mkdir(exist_ok=True)
+        recent.mkdir(exist_ok=True)
+        old = time.time() - 2 * 86400
+        os.utime(stale, (old, old))
+        try:
+            opencode._cleanup_stale_temp_dirs()
+            self.assertFalse(stale.exists())
+            self.assertTrue(recent.exists())
+        finally:
+            if stale.exists():
+                stale.rmdir()
+            recent.rmdir()
+
+    def test_parse_reply_reads_json_and_falls_back_to_stderr(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out.txt"
+            err = Path(tmp) / "err.txt"
+            out.write_text(
+                '{"sessionID":"ses_abc","type":"text","part":{"text":"parte 1"}}\n'
+                '{"type":"text","part":{"text":"parte 2"}}\n',
+                encoding="utf-8",
+            )
+            err.write_text("error de ejemplo", encoding="utf-8")
+            text, sid = opencode.parse_reply(out, err)
+            self.assertEqual(text, "parte 1\nparte 2")
+            self.assertEqual(sid, "ses_abc")
+            out.write_text("", encoding="utf-8")
+            text, sid = opencode.parse_reply(out, err)
+            self.assertEqual(text, "error de ejemplo")
+
+    def test_agent_keeps_bitty_identity(self) -> None:
+        self.assertIn("Marcelbon", opencode.AGENT_TEXT)
+        self.assertIn("Soy Bitty, tu mascota de OpenCode", opencode.AGENT_TEXT)
+        self.assertIn("espanol", opencode.AGENT_TEXT)
+
+
+class StateValidationTests(unittest.TestCase):
+    def test_load_sanitizes_persisted_values(self) -> None:
+        raw = {
+            "x": "no-numero",
+            "y": True,
+            "roam_paused": "sí",
+            "session_mode": "continue",
+            "session_id": "--auto",
+            "session_label": "x" * 200,
+            "theme": "inesperado",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.json"
+            path.write_text(json.dumps(raw), encoding="utf-8")
+            with mock.patch.object(state, "STATE_PATH", path):
+                data = state.load()
+        self.assertIsNone(data["x"])
+        self.assertIsNone(data["y"])
+        self.assertIs(data["roam_paused"], True)
+        self.assertEqual(data["session_id"], "")
+        self.assertEqual(len(data["session_label"]), 80)
+        self.assertEqual(data["theme"], "auto")
+        self.assertEqual(data["session_mode"], "continue")
+
+
+if __name__ == "__main__":
+    unittest.main()

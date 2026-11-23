@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.4.0
+> **Windows · macOS · Linux · Fedora** · v2.4.1
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,14 +22,16 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.4.0 |
+| Sistema | Descarga directa v2.4.1 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.0/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.1/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.1/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.1/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.1/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.4.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.4.1](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.1)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+
+Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1.
 
 El paquete de Fedora se compila dentro de un contenedor `fedora:latest`, no se reutiliza el de Ubuntu: así las bibliotecas Qt encajan con el sistema. El zip incluye `Bitty/`, `agent/bitty.md` e `install-fedora.sh`. El instalador copia la mascota a `~/.local/share/BittyMascot`, instala el agente en `~/.config/opencode/agents/bitty.md` y configura el arranque con `systemd --user` (usa `--no-autostart` si no lo quieres). En Wayland los atajos globales pueden necesitar permisos adicionales.
 
@@ -54,7 +56,7 @@ Instalación y detalle de eventos: **[plugin/README.md](plugin/README.md)**. Req
 { "plugins": ["C:/Users/marce/Downloads/bitty-mascot/plugin"] }
 ```
 
-> Los binarios de Windows, macOS y Linux siguen siendo los mismos que en v2.3.0; v2.4.0 añade el paquete específico de Fedora y la versión del plugin.
+> v2.4.1 regenera los cuatro binarios con los arreglos de seguridad y añade la suite de alpha tests al repositorio.
 
 ## Bitty opina (nuevo en v2.2.0)
 
@@ -82,6 +84,20 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.4.1
+
+- **Ejecución verificada**: la mascota arranca y se mantiene viva sin errores en Windows.
+- **Seguridad reforzada**: un ID de sesión manipulado ya no puede convertirse en una opción de la CLI; los mensajes que empiezan por `-` se protegen con `--`; la salida de OpenCode va a directorios temporales privados y únicos; y `state.json` se valida al cargarlo.
+- **Alpha tests incluidos**: 9 pruebas de Python y 5 de Node que cubren inyección de argumentos, temporales, catálogo cerrado, permiso rechazado/concedido y límites de privacidad.
+- Los alpha tests detectaron y permitieron corregir un fallo real en la validación de IDs antes de publicar.
+
+### Cómo ejecutar los alpha tests
+
+```bash
+python -m unittest discover -s tests -v
+cd plugin && npm run test:alpha
+```
 
 ## Novedades de v2.4.0
 
@@ -229,16 +245,19 @@ bitty-mascot/
 │   ├── state.py              # Persistencia portable
 │   └── resources/            # 21 sprites + icono
 ├── agent/bitty.md            # Identidad de Bitty
-├── plugin/                   # Plugin para OpenCode TUI y Desktop (v2.4.0)
+├── plugin/                   # Plugin para OpenCode TUI y Desktop (v2.4.1)
 │   ├── src/index.ts          # Parte servidor
 │   ├── src/tui.tsx           # Parte terminal
 │   ├── src/gui.tsx           # Parte Desktop
 │   ├── src/shared/faces.ts   # Caras y eventos compartidos
 │   └── gui-dist/             # Bundle GUI versionado
+├── tests/test_alpha.py       # Alpha tests de seguridad (Python)
+├── plugin/tests/alpha.test.cjs # Alpha tests del plugin (Node)
 ├── run_bitty.py              # Entry point para PyInstaller
 ├── build.py                  # Empaquetado local
 ├── requirements.txt
 ├── install.ps1 / install.sh  # Instaladores
+├── install-fedora.sh         # Instalador específico de Fedora
 ├── uninstall.ps1 / uninstall.sh
 ├── .github/workflows/build.yml
 ├── docs/INSTALACION.md

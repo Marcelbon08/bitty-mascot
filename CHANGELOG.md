@@ -6,6 +6,27 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.4.1] - 2026-11-23
+
+### Añadido
+- **Alpha tests** en `tests/test_alpha.py` (9 pruebas Python) y `plugin/tests/alpha.test.cjs` (5 pruebas Node), ejecutables con `python -m unittest discover -s tests -v` y `npm run test:alpha`.
+- Los tests cubren inyección de argumentos, temporales privados, persistencia validada, catálogo cerrado de MCP, permiso rechazado/concedido y acotación del escaneo de sesiones.
+
+### Seguridad
+- Un ID de sesión que empieza por `-` o contiene caracteres extraños ya no se pasa a la CLI; `open_app()` también lo rechaza.
+- Los mensajes que empiezan por `-` se envían tras `--` para que no puedan interpretarse como opciones.
+- La salida de `opencode run` usa ahora directorios temporales privados y únicos (`mkdtemp`), con limpieza de los abandonados hace más de 24 h.
+- `state.json` valida tema, modo, ID de sesión, etiqueta, posición y pausa al cargarlo.
+
+### Corregido
+- Los propios alpha tests detectaron que la primera expresión regular de ID permitía guiones iniciales (`--auto`); se corrigió antes de publicar.
+
+### Verificado
+- Ejecución real de la mascota en Windows: arranca y sigue viva sin errores ni avisos.
+- 9/9 tests Python y 5/5 tests Node en verde; `npm run typecheck` y `npm run build` pasan.
+
+---
+
 ## [2.4.0] - 2026-11-23
 
 ### Añadido
