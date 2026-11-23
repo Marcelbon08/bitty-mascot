@@ -6,6 +6,22 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.4.2] - 2026-11-23
+
+### Añadido
+- **CI con alpha tests**: el workflow ejecuta `python -m unittest discover -s tests -v`, `npm run test:alpha` y `npm run typecheck` en cada push a `main`, PR y tag.
+- **Smoke test en Fedora**: dentro del contenedor se arranca el binario con `xvfb-run` y `timeout 20s`; si Bitty se cae con error, el job falla.
+
+### Cambiado
+- `build.py` excluye módulos PySide6 no utilizados (WebEngine, Pdf, Qml, Quick, Multimedia, Bluetooth, Sql, Charts, etc.).
+- Windows: 59,6 MB → 55,2 MB (−4,4 MB). macOS/Linux deberían beneficiarse más.
+
+### Verificado
+- Binario Windows recortado arrancado localmente: `ALIVE=True`, log vacío.
+- Tests Python y Node en verde; `typecheck` y `build` pasan.
+
+---
+
 ## [2.4.1] - 2026-11-23
 
 ### Añadido

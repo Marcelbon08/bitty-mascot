@@ -2,14 +2,42 @@ name: Construir Bitty (Windows / macOS / Linux / Fedora)
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
+  test:
+    name: Alpha tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Alpha tests de la mascota
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m unittest discover -s tests -v
+
+      - name: Alpha tests del plugin
+        run: |
+          cd plugin
+          npm ci
+          npm run test:alpha
+          npm run typecheck
+
   build:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -66,6 +94,7 @@ jobs:
         run: |
           dnf install -y git ca-certificates python3 python3-devel python3-pip zip \
             gcc gcc-c++ binutils kernel-headers \
+            xorg-x11-server-Xvfb libxcb-cursor \
             mesa-libGL mesa-libEGL libxcb libX11 libXext libXrandr \
             libXrender libxkbcommon dbus-libs alsa-lib systemd-libs
 
@@ -79,6 +108,17 @@ jobs:
 
       - name: Empaquetar en Fedora
         run: .venv/bin/python build.py
+
+      - name: Probar arranque real en Fedora (Xvfb)
+        run: |
+          code=0
+          timeout 20s xvfb-run -a dist/Bitty/Bitty > bitty-smoke.log 2>&1 || code=$?
+          cat bitty-smoke.log || true
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            echo "Bitty salió con código $code"
+            exit 1
+          fi
+          echo "Bitty arrancó en Fedora (código de timeout=$code)"
 
       - name: Comprimir paquete Fedora
         run: |
@@ -97,7 +137,7 @@ jobs:
 
   release:
     name: Publicar release
-    needs: [build, fedora]
+    needs: [build, fedora, test]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 

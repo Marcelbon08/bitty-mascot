@@ -22,6 +22,21 @@ SPRITES = ROOT / "bitty" / "resources" / "sprites"
 SEP = ";" if sys.platform == "win32" else ":"
 NAME = "Bitty"
 
+# Bitty solo usa QtCore, QtGui y QtWidgets. El resto de PySide6 (WebEngine,
+# Pdf, Qml, Multimedia...) añade cientos de MB que nunca se ejecutan.
+UNUSED_MODULES = [
+    "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.QtWebEngine",
+    "PySide6.QtWebChannel", "PySide6.QtPdf", "PySide6.QtPdfWidgets",
+    "PySide6.QtQml", "PySide6.QtQuick", "PySide6.QtQuick3D",
+    "PySide6.QtMultimedia", "PySide6.QtMultimediaWidgets",
+    "PySide6.QtBluetooth", "PySide6.QtNfc", "PySide6.QtPositioning",
+    "PySide6.QtSensors", "PySide6.QtSerialPort", "PySide6.QtSql",
+    "PySide6.QtTest", "PySide6.QtDesigner", "PySide6.QtHelp",
+    "PySide6.QtNetworkAuth", "PySide6.QtScxml", "PySide6.QtSpatialAudio",
+    "PySide6.QtStateMachine", "PySide6.QtTextToSpeech", "PySide6.QtUiTools",
+    "PySide6.QtCharts", "PySide6.QtDataVisualization",
+]
+
 
 def main() -> int:
     if shutil.which("pyinstaller") is None:
@@ -40,6 +55,8 @@ def main() -> int:
     if ICON.exists() and sys.platform == "win32":
         cmd += ["--icon", str(ICON)]
     cmd += ["--hidden-import", "pynput", str(ROOT / "run_bitty.py")]
+    for module in UNUSED_MODULES:
+        cmd += ["--exclude-module", module]
 
     print(" ".join(cmd))
     env = dict(os.environ)
