@@ -6,6 +6,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.4.4] - 2026-11-23
+
+### Añadido
+- **Cierre del rechazo de permiso**: `src/shared/permission.ts` centraliza la regla `forceAsk()` y `src/shared/handleInstall.ts` el flujo completo del RPC. `index.ts` delega en ambos, de modo que la misma lógica se ejecuta en producción y en los tests.
+- **3 tests nuevos** (`permiso_siempre_pregunta`, `flujo_rpc_sesion_invalida_no_pide_permiso`, `flujo_rpc_rechazo_end_to_end`): cubren la regla `ask`, que un ID inválido ni siquiera pide permiso, y que un rechazo no llama a `transform`, `add` ni `connect`.
+
+### Verificado
+- 11/11 alpha tests Node, 9/9 tests Python, `typecheck` y `build` en verde.
+- El diálogo nativo real sigue requiriendo prueba manual: lo que se automatiza es la decisión y sus consecuencias, no la pulsación del botón del sistema.
+
+---
+
 ## [2.4.3] - 2026-11-23
 
 ### Añadido

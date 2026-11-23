@@ -3,6 +3,7 @@
 // El permiso se pide siempre con el diálogo nativo de OpenCode (sin guardarlo).
 
 import { CAPACITIES, type Capacity, type CapacityId } from "./capacities"
+import { INSTALL_ACTION } from "./permission"
 
 export interface InstallResult {
   ok: boolean
@@ -34,7 +35,7 @@ export async function installCapacity(
     await ctx.permission.assert({
       sessionID: input.sessionID,
       agent: input.agent,
-      action: "bitty.install.mcp",
+      action: INSTALL_ACTION,
       resources,
       metadata: {
         title: capacity.title,

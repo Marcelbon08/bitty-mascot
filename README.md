@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.4.3
+> **Windows · macOS · Linux · Fedora** · v2.4.4
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,14 +22,14 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.4.3 |
+| Sistema | Descarga directa v2.4.4 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.3/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.3/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.3/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.3/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.4/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.4/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.4/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.4/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.4.3](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.3)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.4.4](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.4)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI.
 
@@ -84,6 +84,11 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.4.4
+
+- **Rechazo de permiso verificado de extremo a extremo**: la regla `ask` se aplica siempre a la acción de Bitty, y si rechazas el diálogo no se toca la configuración ni se conecta ningún MCP. El flujo completo (validar → preguntar → rechazar → no instalar) se prueba con 11 tests Node.
+- **Instalación centralizada**: la lógica del RPC salió de `index.ts` a `handleInstall.ts`, para que la misma ruta se pueda probar sin servidor.
 
 ## Novedades de v2.4.3
 

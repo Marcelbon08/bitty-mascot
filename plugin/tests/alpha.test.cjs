@@ -11,6 +11,8 @@ const { scanProject, scanToText } = require(path.join(build, "scan.js"))
 const { opinionSourceLabel, pushHistory } = require(path.join(build, "opinion.js"))
 const { localOpinion, opinionFromModel } = require(path.join(build, "opina.js"))
 const { safeSessionId, safeAgent, safeDirectory } = require(path.join(build, "validate.js"))
+const { forceAsk, INSTALL_ACTION } = require(path.join(build, "permission.js"))
+const { installFromRpc } = require(path.join(build, "handleInstall.js"))
 
 const results = []
 function check(name, fn) {
@@ -147,6 +149,78 @@ async function main() {
     let capped = []
     for (let i = 0; i < 9; i += 1) capped = pushHistory(capped, first)
     assert.equal(capped.length, 5)
+  })
+
+  check("permiso_siempre_pregunta", () => {
+    const own = { action: INSTALL_ACTION }
+    forceAsk(own)
+    assert.equal(own.effect, "ask")
+    assert.match(own.message, /Revisa/)
+    const other = { action: "otra.accion" }
+    forceAsk(other)
+    assert.equal(other.effect, undefined)
+    assert.equal(other.message, undefined)
+  })
+
+  // Flujo real del RPC simulado: hook -> validación -> permission.assert -> instalación.
+  let evaluateHook = null
+  let assertInput = null
+  let observedEffect = null
+  let touched = false
+  const flowCtx = {
+    permission: {
+      async hook(_name, callback) {
+        evaluateHook = callback
+      },
+      async assert(input) {
+        assertInput = input
+        const event = { action: input.action }
+        if (evaluateHook) await evaluateHook(event)
+        observedEffect = event.effect
+        // El usuario pulsa "rechazar" en el diálogo nativo.
+        throw new Error("denied por el usuario")
+      },
+    },
+    mcp: {
+      async transform() { touched = true },
+      async reload() {},
+    },
+    client: {
+      mcp: {
+        async add() { touched = true },
+        async connect() { touched = true },
+      },
+    },
+  }
+
+  // setup(ctx) registra la regla; el RPC solo la usa al pedir permiso.
+  await flowCtx.permission.hook("evaluate", async (event) => forceAsk(event))
+
+  const badFlow = await installFromRpc(flowCtx, { capacity: "navegador", sessionID: "--auto" })
+  check("flujo_rpc_sesion_invalida_no_pide_permiso", () => {
+    assert.equal(badFlow.ok, false)
+    assert.equal(badFlow.denied, false)
+    assert.equal(assertInput, null)
+    assert.equal(touched, false)
+  })
+
+  const deniedFlow = await installFromRpc(flowCtx, {
+    capacity: "navegador",
+    sessionID: "ses_ok",
+    agent: "../../etc",
+    directory: "C:/tmp\x00raro",
+  })
+  check("flujo_rpc_rechazo_end_to_end", () => {
+    assert.equal(deniedFlow.ok, false)
+    assert.equal(deniedFlow.denied, true)
+    assert.match(deniedFlow.message, /Permiso rechazado/)
+    assert.equal(observedEffect, "ask")
+    assert.equal(assertInput.action, INSTALL_ACTION)
+    assert.equal(assertInput.sessionID, "ses_ok")
+    assert.equal(assertInput.agent, undefined)
+    assert.equal(assertInput.directory, undefined)
+    assert.equal(touched, false)
+    assert.equal(evaluateHook instanceof Function, true)
   })
 
   console.log(results.join("\n"))

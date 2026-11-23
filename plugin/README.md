@@ -61,6 +61,8 @@ También está el botón **Pedir opinión** dentro del panel y la opción en la 
 
 > Bitty nunca escribe en tu sesión ni cancela tu trabajo. La opinión es un consejo, no una orden. Las sugerencias se guardan solo en memoria de la pestaña; al crear sesión nueva se limpian.
 
+La instalación de capacidades pasa por un único flujo (`handleInstall.ts`): validar los datos de la UI, forzar el efecto `ask` en el permiso de Bitty y, solo si aceptas, registrar el MCP. Si rechazas, no se escribe configuración ni se conecta nada. El botón del diálogo nativo lo pulsa el usuario; lo que queda cubierto por tests es la regla y sus consecuencias.
+
 ## Fase 3: mirar más sesiones
 
 Con `/bitty-ver` (o `Ctrl+Alt+V` / `Mod+Alt+V`) Bitty lee un **resumen acotado** de las últimas sesiones del proyecto actual:
