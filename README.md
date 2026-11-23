@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.4.7
+> **Windows · macOS · Linux · Fedora** · v2.5.0
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,14 +22,14 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.4.7 |
+| Sistema | Descarga directa v2.5.0 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.7/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.7/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.7/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.7/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.0/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.4.7](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.7)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.5.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI.
 
@@ -75,7 +75,7 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 - **Fase 3 — ver más**: `/bitty-ver` (`Ctrl+Alt+V` / `Mod+Alt+V`) muestra un resumen acotado de las últimas sesiones del proyecto: máximo 6 sesiones, 6 mensajes por sesión y 240 caracteres por mensaje. No copia contenido a la conversación.
 - **Fase 4 — instalar con permiso**: `/bitty-instalar` (`Ctrl+Alt+I` / `Mod+Alt+I`) ofrece un catálogo cerrado: por ahora solo el MCP de Playwright (`bitty-navegador`) para abrir y leer páginas. Antes de instalar aparece el **diálogo nativo de permisos** de OpenCode; si rechazas, no se instala nada.
 - **Permiso cada vez**: Bitty no guarda la aprobación y nunca ejecuta comandos arbitrarios ni instala extensiones del navegador por su cuenta.
-- **Sin captura de pantalla**: OpenCode no expone una API genérica para ver la pantalla; la capacidad disponible es el MCP del navegador, que OpenCode usa con sus herramientas cuando tú lo autorizas.
+- **Captura bajo demanda (desde v2.5.0)**: la mascota expone un puente local para que OpenCode pida una imagen fresca del escritorio real con `bitty_screen` (permiso nativo cada vez). Sigue sin haber grabación continua ni acceso sigiloso. El MCP de Playwright, si lo instalas, sigue siendo solo para páginas web.
 
 ## Vista previa
 
@@ -84,6 +84,14 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.5.0
+
+- **Bitty y OpenCode comparten el cursor**: el plugin registra las herramientas `bitty_cursor` y `bitty_screen`. OpenCode puede pedirle a Bitty que mueva su cursor virtual a unas coordenadas, sin tocar tu ratón ni hacer clics.
+- **Visión de pantalla para OpenCode**: `bitty_screen` captura todas tus pantallas (o la principal) y se la entrega al modelo como **data-URL inline** (la forma que OpenCode 2.3.2 sabe leer en resultados de herramientas). Es la forma de que un modelo **con visión** vea tu escritorio real, incluido tu Opera. No es el navegador oculto de Playwright.
+- **Privacidad por diseño**: el puente solo escucha en `127.0.0.1`, usa un token aleatorio guardado en `BittyMascot/bridge.json` (modo `0600` en POSIX) y **pide permiso nativo cada vez** para mover el cursor o mirar la pantalla. No hay opción de «permitir siempre». Puedes desactivar el puente desde el menú derecho (`> PUENTE OPENCODE`).
+- **Sin vídeo permanente**: la visión es bajo demanda: cada vez que el modelo necesita ver, pide una captura nueva. Es una imagen fresca, no una grabación ni un stream continuo. Las capturas se guardan en temporal, se limitan a 6 y se borran al salir.
+- Arreglado: `QToolTip.showText` usaba el tiempo como argumento posicional y fallaba en PySide6 actual; ahora se pasa con `msecShowTime`.
 
 ## Novedades de v2.4.7
 

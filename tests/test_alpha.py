@@ -160,6 +160,55 @@ class BundleTests(unittest.TestCase):
             self.assertTrue((folder / f"{prefix}Qt6Widgets{suffix}").exists())
 
 
+class BridgeTests(unittest.TestCase):
+    def test_loopback_token_and_cursor_commands(self) -> None:
+        import http.client
+
+        from bitty import bridge
+
+        with tempfile.TemporaryDirectory() as tmp:
+            calls: list[tuple[int, int]] = []
+            with mock.patch.object(bridge.state, "config_dir", return_value=Path(tmp)):
+                server = bridge.Bridge(
+                    lambda x, y: calls.append((x, y)),
+                    on_capture=lambda work: work(),
+                )
+                server.start()
+                try:
+                    config = json.loads((Path(tmp) / "bridge.json").read_text(encoding="utf-8"))
+                    self.assertEqual(config["port"], server.port)
+                    self.assertGreaterEqual(len(config["token"]), 20)
+
+                    client = http.client.HTTPConnection("127.0.0.1", server.port, timeout=5)
+                    client.request("GET", "/ping")
+                    response = client.getresponse()
+                    self.assertEqual(json.loads(response.read())["ok"], True)
+
+                    headers = {"Content-Type": "application/json"}
+                    client.request("POST", "/cursor", "{}", {**headers, "X-Bitty-Token": "incorrecto"})
+                    self.assertEqual(client.getresponse().status, 401)
+
+                    auth = {**headers, "X-Bitty-Token": config["token"]}
+                    client.request("POST", "/cursor", '{"x": 12, "y": -4}', auth)
+                    response = client.getresponse()
+                    self.assertEqual(json.loads(response.read())["x"], 12)
+                    self.assertEqual(calls, [(12, -4)])
+
+                    client.request("POST", "/cursor", '{"x": 1.5, "y": 2}', auth)
+                    self.assertEqual(client.getresponse().status, 400)
+
+                    fake = {"path": str(Path(tmp) / "captura.png"), "uri": "file:///captura.png",
+                            "width": 800, "height": 600, "screens": 1}
+                    with mock.patch("bitty.screen.capture_to_png", return_value=fake):
+                        client.request("POST", "/capture", "{}", auth)
+                        response = client.getresponse()
+                        self.assertEqual(json.loads(response.read())["uri"], "file:///captura.png")
+                    client.close()
+                finally:
+                    server.stop()
+            self.assertFalse((Path(tmp) / "bridge.json").exists())
+
+
 class VirtualCursorTests(unittest.TestCase):
     def test_navigator_moves_smoothly_and_arrives(self) -> None:
         from bitty.virtual_cursor import CursorNavigator

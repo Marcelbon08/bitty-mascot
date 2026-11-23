@@ -8,6 +8,7 @@ import random
 import subprocess
 import sys
 from pathlib import Path
+from typing import Callable
 
 from PIL import Image
 from PySide6.QtCore import Qt, QEvent, QPoint, QRect, QSize, QTimer, Signal
@@ -21,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import opencode, state
+from .bridge import Bridge
 from .cursor_view import BittyCursorView
 from .themes import THEMES, resolve_theme, theme_for_date, tint_sprite
 from .virtual_cursor import parse_cursor_command
@@ -123,6 +125,19 @@ class BittyWindow(QWidget):
         self.cursor_view = BittyCursorView(self.theme, self)
         self.cursor_view.set_home(self.anchor)
         self.cursor_view.go_to(self.anchor.x() + 90, self.anchor.y() + 70)
+
+        # El puente HTTP vive en un hilo: las órdenes se encolan y se aplican
+        # desde el timer de Qt, que sí está en el hilo de la interfaz.
+        self.bridge_queue: list[tuple[str, tuple]] = []
+        self.bridge = Bridge(self._queue_cursor, self._queue_capture)
+        self.bridge_action.setChecked(bool(self.data.get("bridge_enabled", True)))
+        if self.bridge_action.isChecked():
+            try:
+                self.bridge.start()
+            except OSError:
+                self.bridge_action.setChecked(False)
+                self.data["bridge_enabled"] = False
+        self._sync_bridge_action()
 
         self.set_mode("idle", "happy", "")
         self.override_until = _dt.datetime.now() + _dt.timedelta(seconds=4)
@@ -251,6 +266,11 @@ class BittyWindow(QWidget):
         self.cursor_demo_action.triggered.connect(self._toggle_cursor_demo)
         self.menu.addAction(self.cursor_demo_action)
         self.menu.addAction("> CURSOR: IR AL CENTRO", self._cursor_center)
+        self.menu.addSeparator()
+        self.bridge_action = QAction("> PUENTE OPENCODE: DESACTIVAR", self)
+        self.bridge_action.setCheckable(True)
+        self.bridge_action.triggered.connect(self._toggle_bridge)
+        self.menu.addAction(self.bridge_action)
         self.menu.addSeparator()
         theme_menu = self.menu.addMenu("> TEMA")
         self.theme_actions = {}
@@ -595,7 +615,7 @@ class BittyWindow(QWidget):
     # ------------------------------------------------------------ actions
     def _follow(self) -> None:
         if not self.last_session_id:
-            QToolTip.showText(QCursor.pos(), "No hay sesion aun", self, 1600)
+            QToolTip.showText(QCursor.pos(), "No hay sesion aun", self, msecShowTime=1600)
             return
         self.data["session_mode"] = "continue"
         self.data["session_id"] = self.last_session_id
@@ -605,17 +625,17 @@ class BittyWindow(QWidget):
 
     def _open_app(self) -> None:
         if not self.last_session_id:
-            QToolTip.showText(QCursor.pos(), "No hay sesion aun", self, 1600)
+            QToolTip.showText(QCursor.pos(), "No hay sesion aun", self, msecShowTime=1600)
             return
         if self.exe and opencode.open_app(self.exe, self.last_session_id):
-            QToolTip.showText(QCursor.pos(), "Abriendo OpenCode...", self, 1600)
+            QToolTip.showText(QCursor.pos(), "Abriendo OpenCode...", self, msecShowTime=1600)
         else:
-            QToolTip.showText(QCursor.pos(), "No se pudo abrir OpenCode", self, 1800)
+            QToolTip.showText(QCursor.pos(), "No se pudo abrir OpenCode", self, msecShowTime=1800)
 
     def _copy_reply(self) -> None:
         if self.last_reply:
             QApplication.clipboard().setText(self.last_reply)
-            QToolTip.showText(QCursor.pos(), "Copiado al portapapeles", self, 1600)
+            QToolTip.showText(QCursor.pos(), "Copiado al portapapeles", self, msecShowTime=1600)
 
     def _repeat(self) -> None:
         if self.last_prompt:
@@ -634,7 +654,7 @@ class BittyWindow(QWidget):
 
     # -------------------------------------------------------- cursor virtual
     def _cursor_notice(self, message: str) -> None:
-        QToolTip.showText(self.mapToGlobal(QPoint(42, 42)), message, self, 1400)
+        QToolTip.showText(self.mapToGlobal(QPoint(42, 42)), message, self, msecShowTime=1400)
 
     def _toggle_cursor_visible(self, checked: bool) -> None:
         self.cursor_view.set_visible_cursor(checked)
@@ -647,6 +667,49 @@ class BittyWindow(QWidget):
     def _cursor_center(self) -> None:
         self.cursor_view.center()
 
+    # ------------------------------------------------------- puente local
+    def _queue_cursor(self, x: int, y: int) -> None:
+        self.bridge_queue.append(("cursor", (x, y)))
+
+    def _queue_capture(self, work: Callable[[], None]) -> None:
+        self.bridge_queue.append(("capture", (work,)))
+
+    def _apply_bridge_queue(self) -> None:
+        while self.bridge_queue:
+            kind, payload = self.bridge_queue.pop(0)
+            if kind == "cursor":
+                x, y = payload
+                self.cursor_view.go_to(x, y)
+                self._cursor_notice(f"CURSOR -> {x},{y} (OPENCODE)")
+                self.sprite_override = "curious"
+            elif kind == "capture":
+                self.sprite_override = "surprise"
+                self._cursor_notice("BITTY ESTA MIRANDO LA PANTALLA")
+                # La captura se ejecuta aquí, en el hilo de Qt, y despierta al
+                # hilo HTTP cuando ya tiene el PNG en disco.
+                work = payload[0]
+                work()
+            self.override_until = _dt.datetime.now() + _dt.timedelta(seconds=2)
+
+    def _sync_bridge_action(self) -> None:
+        active = self.bridge_action.isChecked()
+        self.bridge_action.setText(
+            "> PUENTE OPENCODE: DESACTIVAR" if active else "> PUENTE OPENCODE: ACTIVAR"
+        )
+
+    def _toggle_bridge(self, checked: bool) -> None:
+        if checked:
+            try:
+                self.bridge.start()
+            except OSError:
+                checked = False
+        else:
+            self.bridge.stop()
+        self.bridge_action.setChecked(checked)
+        self._sync_bridge_action()
+        self.data["bridge_enabled"] = checked
+        self._save()
+
     def _toggle_pause(self) -> None:
         self.roam_paused = not self.roam_paused
         self.pause_action.setText(self._pause_label())
@@ -658,6 +721,7 @@ class BittyWindow(QWidget):
     def _quit(self) -> None:
         self.stop_waiting()
         self.cursor_view.stop()
+        self.bridge.stop()
         self._save()
         if self.hotkey_listener:
             try:
@@ -677,7 +741,7 @@ class BittyWindow(QWidget):
         self._sync_theme_actions()
         self._save()
         if notify:
-            QToolTip.showText(QCursor.pos(), f"Tema: {self.theme.label}", self, 1600)
+            QToolTip.showText(QCursor.pos(), f"Tema: {self.theme.label}", self, msecShowTime=1600)
         self.update()
 
     def _sync_theme_actions(self) -> None:
@@ -707,6 +771,7 @@ class BittyWindow(QWidget):
 
     def _roam(self) -> None:
         self.frame += 1
+        self._apply_bridge_queue()
         if self.mode == "reaction" and _dt.datetime.now() > self.reaction_until:
             self.close_bubble()
         if self.mode != "input" and not self.dragging and not self.roam_paused:

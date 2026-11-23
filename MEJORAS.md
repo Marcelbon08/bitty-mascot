@@ -12,6 +12,8 @@ Lista viva de mejoras de Bitty, ordenada por prioridad. Lo ya publicado queda en
 6. Historial de las 5 últimas opiniones.
 7. Aviso contextual al detectar una web: distingue si el MCP ya está disponible o si hay que instalarlo.
 12. Cursor virtual de Bitty (v2.4.7): segundo cursor pixelado que se mueve a coordenadas con interpolación fluida, sin tocar el ratón real ni hacer clics.
+13. Integración del cursor con OpenCode (v2.5.0): herramienta `bitty_cursor` y puente local con token; OpenCode manda coordenadas, Bitty mueve su cursor virtual.
+14. Visión de pantalla para OpenCode (v2.5.0): herramienta `bitty_screen` entrega una captura PNG fresca del escritorio real (incluido el Opera de Marcelbon), con permiso nativo cada vez y sin grabación continua.
 
 ## Pendientes
 
@@ -41,3 +43,16 @@ Lista viva de mejoras de Bitty, ordenada por prioridad. Lo ya publicado queda en
 - **Aclaración de Marcelbon**: no quiere mover su cursor real. Quiere **dos cursores**: el suyo y uno propio de Bitty, dibujado en pantalla. El de Bitty es visual (señalar/guiar), sin inyectar clics ni teclas en el sistema.
 - **Implementado**: `/cursor x,y` envía el cursor a unas coordenadas; `CursorNavigator` interpola cada 20 ms con tope de 16 px por paso hasta llegar. Ventana siempre encima, transparente a clics y multimonitor. Ruta aleatoria y ocultar/mostrar desde el menú derecho.
 - **Fuera de alcance a propósito**: mover el ratón real, hacer clics o escribir, y actuar sobre el Opera del usuario. Eso seguiría siendo una decisión aparte con permiso cada vez; Playwright no controla el navegador real de Marcelbon.
+
+### 13. Cursor compartido con OpenCode → HECHA en v2.5.0
+
+- **Petición de Marcelbon**: «habrá que integrarlo a Bitty y a OpenCode para que puedan hacerlo».
+- **Implementado**: Bitty abre un puerto solo en `127.0.0.1` con token aleatorio y el plugin registra `bitty_cursor`. OpenCode manda `x`, `y`; la mascota mueve su puntero y muestra un aviso breve. El ratón real sigue intacto.
+- El permiso se pide cada vez y no se guarda; el puente se puede apagar desde el menú derecho.
+
+### 14. Visión en tiempo real de la pantalla → HECHA en v2.5.0
+
+- **Petición de Marcelbon**: «definitivamente necesitamos alguna cosa para que OpenCode pueda tener una visión a tiempo real de la pantalla».
+- **Implementado**: `bitty_screen` captura el escritorio real con Qt y se lo adjunta a OpenCode como PNG en **data-URL inline** (la forma que OpenCode 2.3.2 materializa en resultados de tools). Es una imagen fresca bajo demanda cada vez que el modelo la pide, no un vídeo permanente ni una captura silenciosa. Requiere un modelo con visión.
+- **Opera real**: esta captura ve la ventana del navegador de Marcelbon, a diferencia del Chromium oculto de Playwright. Para navegar por páginas se mantiene el MCP `bitty-navegador` de Fase 4.
+- **Privacidad**: diálogo nativo cada vez, token local, sin grabación, máximo 6 PNG en temporal y borrado al salir.

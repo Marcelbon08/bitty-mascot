@@ -30,6 +30,7 @@ DEFAULT = {
     "session_id": "",
     "session_label": "",
     "theme": "auto",
+    "bridge_enabled": True,
 }
 
 
@@ -56,6 +57,7 @@ def load() -> dict:
     label = data.get("session_label")
     data["session_label"] = label[:80] if isinstance(label, str) else ""
     data["roam_paused"] = bool(data.get("roam_paused"))
+    data["bridge_enabled"] = bool(data.get("bridge_enabled", True))
     for axis in ("x", "y"):
         value = data.get(axis)
         if isinstance(value, bool) or not isinstance(value, (int, float)):

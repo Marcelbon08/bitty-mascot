@@ -11,7 +11,10 @@ const { scanProject, scanToText } = require(path.join(build, "scan.js"))
 const { opinionSourceLabel, pushHistory } = require(path.join(build, "opinion.js"))
 const { localOpinion, opinionFromModel } = require(path.join(build, "opina.js"))
 const { safeSessionId, safeAgent, safeDirectory } = require(path.join(build, "validate.js"))
-const { forceAsk, INSTALL_ACTION } = require(path.join(build, "permission.js"))
+const {
+  forceAsk, INSTALL_ACTION, CURSOR_ACTION, SCREEN_ACTION,
+} = require(path.join(build, "permission.js"))
+const { validateConnection, bridgeUrl, readConnection } = require(path.join(build, "bridge.js"))
 const { installFromRpc } = require(path.join(build, "handleInstall.js"))
 const { browserHint } = require(path.join(build, "hint.js"))
 
@@ -19,6 +22,16 @@ const results = []
 function check(name, fn) {
   try {
     fn()
+    results.push("PASS " + name)
+  } catch (error) {
+    results.push("FAIL " + name + " :: " + error.message)
+    process.exitCode = 1
+  }
+}
+
+async function checkAsync(name, fn) {
+  try {
+    await fn()
     results.push("PASS " + name)
   } catch (error) {
     results.push("FAIL " + name + " :: " + error.message)
@@ -153,10 +166,18 @@ async function main() {
   })
 
   check("permiso_siempre_pregunta", () => {
-    const own = { action: INSTALL_ACTION }
-    forceAsk(own)
-    assert.equal(own.effect, "ask")
-    assert.match(own.message, /Revisa/)
+    for (const action of [INSTALL_ACTION, CURSOR_ACTION, SCREEN_ACTION]) {
+      const own = { action }
+      forceAsk(own)
+      assert.equal(own.effect, "ask")
+      assert.ok(own.message.length > 20)
+    }
+    const cursor = { action: CURSOR_ACTION }
+    forceAsk(cursor)
+    assert.match(cursor.message, /No moverá tu ratón/)
+    const screen = { action: SCREEN_ACTION }
+    forceAsk(screen)
+    assert.match(screen.message, /capturar tu pantalla/)
     const other = { action: "otra.accion" }
     forceAsk(other)
     assert.equal(other.effect, undefined)
@@ -232,6 +253,41 @@ async function main() {
     const missing = browserHint("mira https://ejemplo.com", false)
     assert.match(missing, /bitty-instalar/)
     assert.match(missing, /permiso/)
+  })
+
+  check("puente_url_y_token", () => {
+    const conn = { port: 4321, token: "t".repeat(40), pid: 7 }
+    assert.equal(bridgeUrl(conn, "/cursor"), "http://127.0.0.1:4321/cursor")
+    assert.equal(validateConnection(conn).port, 4321)
+    assert.equal(validateConnection({ port: 0, token: "t".repeat(40) }), null)
+    assert.equal(validateConnection({ port: 70000, token: "t".repeat(40) }), null)
+    assert.equal(validateConnection({ port: 1234, token: "corto" }), null)
+    assert.equal(validateConnection(null), null)
+  })
+
+  await checkAsync("puente_lee_bridge_json", async () => {
+    const tmp = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "bitty-bridge-"))
+    const previousAppData = process.env.APPDATA
+    const previousXdg = process.env.XDG_CONFIG_HOME
+    process.env.APPDATA = tmp
+    process.env.XDG_CONFIG_HOME = tmp
+    try {
+      const dir = path.join(tmp, "BittyMascot")
+      fs.mkdirSync(dir, { recursive: true })
+      fs.writeFileSync(path.join(dir, "bridge.json"), JSON.stringify({
+        port: 8765, token: "a".repeat(40), pid: 42,
+      }))
+      const conn = await readConnection()
+      assert.equal(conn.port, 8765)
+      assert.equal(conn.token, "a".repeat(40))
+      assert.equal(bridgeUrl(conn, "/capture"), "http://127.0.0.1:8765/capture")
+    } finally {
+      if (previousAppData === undefined) delete process.env.APPDATA
+      else process.env.APPDATA = previousAppData
+      if (previousXdg === undefined) delete process.env.XDG_CONFIG_HOME
+      else process.env.XDG_CONFIG_HOME = previousXdg
+      fs.rmSync(tmp, { recursive: true, force: true })
+    }
   })
 
   console.log(results.join("\n"))

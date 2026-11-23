@@ -6,6 +6,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.5.0] - 2026-11-23
+
+### Añadido
+- **Puente local Bitty ↔ OpenCode** (`bitty/bridge.py`, `plugin/src/shared/bridge.ts`): servidor HTTP solo en `127.0.0.1` con puerto efímero y token aleatorio. El plugin lee `BittyMascot/bridge.json` y nunca acepta una URL externa; las peticiones sin token se rechazan con `401`.
+- **Herramientas `bitty_cursor` y `bitty_screen`** (`plugin/src/index.ts`): OpenCode puede mover el cursor virtual de la mascota y pedir una captura PNG del escritorio real. Ambas fuerzan el **diálogo nativo de permisos cada vez**, sin `save` (`bitty.cursor`, `bitty.screen`). El cursor no mueve el ratón del usuario ni hace clics o teclas.
+- **Imagen inline compatible con OpenCode 2.3.2**: `bitty_screen` lee el PNG y lo devuelve como `data:image/png;base64,...` (igual que las tools internas `read`/MCP). Un `file://` en el resultado de una tool no se materializa en esta versión; por eso se usa data-URL. Requiere un modelo con visión; si no, OpenCode avisa.
+- **Captura con Qt en el hilo correcto** (`bitty/screen.py`): `QScreen.grabWindow` solo se llama desde el hilo de la interfaz; el handler HTTP espera a que el PNG esté listo. Multimonitor: compone todas las pantallas en una imagen.
+- **Interruptor del puente** en el menú derecho (`> PUENTE OPENCODE`), guardado en `state.json`. Al desactivarlo o salir, se cierra el puerto, se borra `bridge.json` y se eliminan las capturas.
+- Documentación actualizada en `README.md` y `plugin/README.md`: la visión es bajo demanda (imagen fresca, no grabación ni streaming) y el MCP de Playwright sigue siendo solo para páginas web, no para el Opera real.
+
+### Corregido
+- `QToolTip.showText` pasaba el tiempo como argumento posicional y fallaba en PySide6 actual; ahora usa `msecShowTime=...`.
+
+### Verificado
+- 14/14 tests Python y 14/14 alpha tests Node, `typecheck` y `build` de plugin.
+- Smoke offscreen de extremo a extremo: el cursor llega a (640, 480), la petición `/capture` devuelve un PNG válido desde el hilo de Qt, y al salir desaparece `bridge.json`.
+
+---
+
 ## [2.4.7] - 2026-11-23
 
 ### Añadido

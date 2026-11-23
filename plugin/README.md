@@ -1,6 +1,6 @@
 # Bitty para OpenCode (plugin)
 
-Bitty también vive **dentro de OpenCode**: en la **terminal (TUI)** y en **OpenCode Desktop**. No sustituye a la mascota flotante: la acompaña. Es la misma identidad —*«Soy Bitty, tu mascota de OpenCode»*— y reacciona en tiempo real a lo que hace la sesión. Desde v2.2.0 **opina** y desde v2.3.0 puede **mirar varias sesiones** e **instalar una capacidad de navegador con tu permiso**. Nunca escribe en tu conversación.
+Bitty también vive **dentro de OpenCode**: en la **terminal (TUI)** y en **OpenCode Desktop**. No sustituye a la mascota flotante: la acompaña. Es la misma identidad —*«Soy Bitty, tu mascota de OpenCode»*— y reacciona en tiempo real a lo que hace la sesión. Desde v2.2.0 **opina**, desde v2.3.0 puede **mirar varias sesiones** e **instalar una capacidad de navegador con tu permiso**, y desde v2.5.0 puede **mover su cursor virtual y ver tu pantalla real** mediante un puente local. Nunca escribe en tu conversación.
 
 > Requiere OpenCode **v2.3.2 o superior**. Es un plugin experimental: usa los puntos de extensión `./tui` y `./gui-experimental`.
 
@@ -15,6 +15,7 @@ Bitty también vive **dentro de OpenCode**: en la **terminal (TUI)** y en **Open
 | Desktop | Panel lateral **Bitty**, píldora junto al composer y texto en la barra inferior |
 | Desktop | Paleta de comandos, `/bitty` y `Mod+Alt+B`; opinión con `/bitty-opina` o `Mod+Alt+O` |
 | Desktop | `/bitty-ver` y `/bitty-instalar`, con atajos `Mod+Alt+V` y `Mod+Alt+I` |
+| Servidor | Herramientas `bitty_cursor` y `bitty_screen`: mueven el cursor virtual y capturan el escritorio real, con permiso nativo cada vez |
 
 ### Caras reactivas
 
@@ -71,9 +72,29 @@ Con `/bitty-ver` (o `Ctrl+Alt+V` / `Mod+Alt+V`) Bitty lee un **resumen acotado**
 - cada mensaje se recorta a 240 caracteres;
 - el panel muestra solo los títulos y una nota: «Solo leo un resumen; no copio nada».
 
-No hay una API genérica de OpenCode para «capturar la pantalla». Para acercarse a lo que pides de «ver el navegador», Bitty usa la Fase 4: instala un servidor MCP de Playwright y entonces OpenCode puede abrir y leer páginas con sus herramientas.
+Para «ver el escritorio» (incluido tu Opera real) Bitty ya no depende solo del navegador oculto: desde v2.5.0 el plugin registra `bitty_screen`, que pide una imagen fresca a la mascota flotante. Para «abrir y leer páginas» sigue existiendo la Fase 4: instala un servidor MCP de Playwright y entonces OpenCode usa sus herramientas. Son dos cosas distintas: la captura ve lo que tú ves; Playwright navega en un navegador propio.
 
 Cuando la sesión habla de una web, el aviso es contextual: si el MCP ya está disponible, Bitty ofrece mirar la página con esas herramientas; si no lo está, explica que hay que instalarlo con permiso. Nunca instala nada por su cuenta.
+
+## Cursor y visión de pantalla (v2.5.0)
+
+El plugin registra dos herramientas en el servidor de OpenCode:
+
+| Herramienta | Qué hace | Permiso |
+|---|---|---|
+| `bitty_cursor` | Envía `x`, `y` al cursor virtual de la mascota. No mueve tu ratón, no hace clics y no escribe teclas. | Diálogo nativo **cada vez** (`bitty.cursor`), sin `save` |
+| `bitty_screen` | Captura todas las pantallas y devuelve el PNG como **data-URL inline** (`data:image/png;base64,...`) para que el modelo vea el escritorio real. Requiere un modelo con visión. | Diálogo nativo **cada vez** (`bitty.screen`), sin `save` |
+
+Cómo funciona el puente:
+
+1. Bitty abre un servidor HTTP **solo en `127.0.0.1`**, con un puerto efímero y un token aleatorio de 43 caracteres.
+2. El token se escribe en `BittyMascot/bridge.json` (junto a `state.json`) con modo `0600` en POSIX. El plugin solo lee ese fichero; nunca acepta una URL de la configuración.
+3. Las peticiones sin token se rechazan con `401`. Las coordenadas se validan como enteros dentro de ±100000.
+4. La captura se hace en el hilo de Qt y se guarda en temporal; se conservan como máximo 6 PNG y se borran al salir Bitty. No hay grabación continua ni streaming.
+5. El plugin lee el PNG y lo devuelve como **data-URL**, que es la única forma que OpenCode 2.3.2 materializa en resultados de herramientas (un `file://` no se lee del disco). Si el modelo seleccionado no soporta imágenes, OpenCode avisará; cambia a un modelo con visión para usar `bitty_screen`.
+6. Puedes desactivar el puente desde el menú derecho de la mascota: `> PUENTE OPENCODE: DESACTIVAR`. Al apagarlo se borra `bridge.json` y desaparece el puerto.
+
+> Si Bitty no está abierta o el puente está desactivado, las herramientas devuelven un error claro. No se abre ningún puerto en la red local ni se contacta con servicios externos.
 
 ## Fase 4: instalar capacidades con permiso
 
@@ -160,6 +181,8 @@ plugin/
 │       ├── scan.ts         # Fase 3: resumen de sesiones del proyecto
 │       ├── capacities.ts   # Fase 4: catálogo cerrado de capacidades
 │       ├── install.ts      # Fase 4: permiso + registro del MCP
+│       ├── bridge.ts       # cliente del puente local de la mascota
+│       ├── permission.ts   # reglas: instalar, cursor y pantalla siempre preguntan
 │       └── rpc.ts          # contrato RPC servidor ↔ TUI/Desktop
 ├── gui-dist/               # bundle GUI versionado
 ├── scripts/copy-bundle.mjs
