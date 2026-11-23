@@ -6,6 +6,19 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.4.7] - 2026-11-23
+
+### Añadido
+- **Cursor virtual de Bitty** (`bitty/virtual_cursor.py`, `bitty/cursor_view.py`): segundo puntero pixelado con ventana propia, siempre visible y `click-through`. `CursorNavigator` interpola hacia las coordenadas objetivo cada 20 ms con tope de 16 px/tick y desaceleración suave; `clamp_point` respeta la unión de pantallas.
+- Control del cursor: comandos `/cursor x,y`, `/cursor demo` y `/cursor para` en el bocadillo, más tres entradas en el menú derecho (ruta aleatoria, ir al centro, ocultar/mostrar). El tema del cursor cambia con el de Bitty.
+- Tres tests nuevos (`VirtualCursorTests`): movimiento gradual sin salto, ausencia de overshoot con cambio de objetivo a mitad del vuelo, clamp multimonitor y parseo de comandos.
+
+### Verificado
+- 13/13 tests Python, 12/12 alpha tests Node, `typecheck` y `build` de plugin.
+- Smoke real offscreen: la ventana arranca, el cursor viaja de (799, 782) a (700, 400) y llega, la ruta aleatoria cambia de destino, ocultar/mostrar funciona y `_quit()` cierra sin errores.
+
+---
+
 ## [2.4.6] - 2026-11-23
 
 ### Añadido

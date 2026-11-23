@@ -1,6 +1,6 @@
 {
   "name": "opencode-bitty-plugin",
-  "version": "2.4.6",
+  "version": "2.4.7",
   "description": "Bitty, la mascota reactiva de OpenCode, dentro de la terminal y de OpenCode Desktop",
   "type": "module",
   "exports": {

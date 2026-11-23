@@ -160,5 +160,57 @@ class BundleTests(unittest.TestCase):
             self.assertTrue((folder / f"{prefix}Qt6Widgets{suffix}").exists())
 
 
+class VirtualCursorTests(unittest.TestCase):
+    def test_navigator_moves_smoothly_and_arrives(self) -> None:
+        from bitty.virtual_cursor import CursorNavigator
+
+        nav = CursorNavigator(0, 0)
+        nav.go_to(100, 0)
+        self.assertTrue(nav.moving)
+        previous = 0
+        steps = 0
+        while nav.moving and steps < 200:
+            x, y = nav.advance()
+            self.assertGreaterEqual(x, previous)
+            self.assertLessEqual(x - previous, 17)  # tope de 16 px + redondeo
+            self.assertEqual(y, 0)
+            previous = x
+            steps += 1
+        self.assertEqual((nav.x, nav.y), (100.0, 0.0))
+        self.assertFalse(nav.moving)
+        self.assertGreater(steps, 5)  # no es un salto instantáneo
+
+    def test_navigator_does_not_overshoot_and_retargets(self) -> None:
+        from bitty.virtual_cursor import CursorNavigator
+
+        nav = CursorNavigator(10, 10)
+        nav.go_to(50, 50)
+        for _ in range(6):
+            x, y = nav.advance()
+            self.assertLessEqual(x, 50)
+            self.assertLessEqual(y, 50)
+        nav.go_to(0, 0)  # cambia de objetivo a mitad del camino
+        for _ in range(100):
+            x, y = nav.advance()
+            self.assertGreaterEqual(x, 0)
+            self.assertGreaterEqual(y, 0)
+            if not nav.moving:
+                break
+        self.assertEqual((nav.x, nav.y), (0.0, 0.0))
+
+    def test_clamp_multimonitor_and_commands(self) -> None:
+        from bitty.virtual_cursor import clamp_point, parse_cursor_command
+
+        rects = [(-1920, 0, 0, 1080), (0, 0, 1920, 1080)]
+        self.assertEqual(clamp_point((-3000, 500), rects), (-1920, 500))
+        self.assertEqual(clamp_point((3000, -20), rects), (1920, 0))
+
+        self.assertEqual(parse_cursor_command("/cursor 500,300"), ("move", (500, 300)))
+        self.assertEqual(parse_cursor_command("/cursor -12 40"), ("move", (-12, 40)))
+        self.assertEqual(parse_cursor_command("/cursor demo"), ("demo", None))
+        self.assertEqual(parse_cursor_command("/cursor para"), ("stop", None))
+        self.assertEqual(parse_cursor_command("hola Bitty"), ("", None))
+
+
 if __name__ == "__main__":
     unittest.main()

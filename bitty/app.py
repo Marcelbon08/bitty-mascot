@@ -21,7 +21,9 @@ from PySide6.QtWidgets import (
 )
 
 from . import opencode, state
+from .cursor_view import BittyCursorView
 from .themes import THEMES, resolve_theme, theme_for_date, tint_sprite
+from .virtual_cursor import parse_cursor_command
 
 if getattr(sys, "frozen", False):
     # PyInstaller extrae los datos a _MEIPASS (en onedir, la carpeta del bundle).
@@ -117,6 +119,11 @@ class BittyWindow(QWidget):
             self.anchor = QPoint(center.x(), center.y())
             self.roam_center = QPoint(self.anchor)
             self.roam_target = QPoint(self.anchor)
+
+        self.cursor_view = BittyCursorView(self.theme, self)
+        self.cursor_view.set_home(self.anchor)
+        self.cursor_view.go_to(self.anchor.x() + 90, self.anchor.y() + 70)
+
         self.set_mode("idle", "happy", "")
         self.override_until = _dt.datetime.now() + _dt.timedelta(seconds=4)
 
@@ -233,6 +240,17 @@ class BittyWindow(QWidget):
         self.menu.addAction("> COPIAR RESPUESTA", self._copy_reply)
         self.menu.addAction("> REPETIR ULTIMO MENSAJE", self._repeat)
         self.menu.addAction("> VOLVER AL CENTRO", self._center)
+        self.menu.addSeparator()
+        self.cursor_visible_action = QAction("> CURSOR: OCULTAR", self)
+        self.cursor_visible_action.setCheckable(True)
+        self.cursor_visible_action.setChecked(True)
+        self.cursor_visible_action.triggered.connect(self._toggle_cursor_visible)
+        self.menu.addAction(self.cursor_visible_action)
+        self.cursor_demo_action = QAction("> CURSOR: RUTA ALEATORIA", self)
+        self.cursor_demo_action.setCheckable(True)
+        self.cursor_demo_action.triggered.connect(self._toggle_cursor_demo)
+        self.menu.addAction(self.cursor_demo_action)
+        self.menu.addAction("> CURSOR: IR AL CENTRO", self._cursor_center)
         self.menu.addSeparator()
         theme_menu = self.menu.addMenu("> TEMA")
         self.theme_actions = {}
@@ -486,6 +504,25 @@ class BittyWindow(QWidget):
         text = self.input_box.text().strip()
         if not text:
             return
+
+        kind, coords = parse_cursor_command(text)
+        if kind == "move" and coords:
+            self.cursor_view.go_to(*coords)
+            self._cursor_notice(f"CURSOR -> {coords[0]},{coords[1]}")
+            self.input_box.clear()
+            return
+        if kind == "demo":
+            self._toggle_cursor_demo()
+            self._cursor_notice("CURSOR: RUTA " + ("ON" if self.cursor_view.demo else "OFF"))
+            self.input_box.clear()
+            return
+        if kind == "stop":
+            self.cursor_view.stop_demo()
+            self.cursor_demo_action.setChecked(False)
+            self._cursor_notice("CURSOR: DETENIDO")
+            self.input_box.clear()
+            return
+
         if not self.exe:
             self.set_mode("reaction", "error", "No encuentro el ejecutable de OpenCode.")
             self.reaction_until = _dt.datetime.now() + _dt.timedelta(seconds=9)
@@ -595,6 +632,21 @@ class BittyWindow(QWidget):
         self._update_location()
         self._save()
 
+    # -------------------------------------------------------- cursor virtual
+    def _cursor_notice(self, message: str) -> None:
+        QToolTip.showText(self.mapToGlobal(QPoint(42, 42)), message, self, 1400)
+
+    def _toggle_cursor_visible(self, checked: bool) -> None:
+        self.cursor_view.set_visible_cursor(checked)
+        self.cursor_visible_action.setText("> CURSOR: MOSTRAR" if not checked else "> CURSOR: OCULTAR")
+
+    def _toggle_cursor_demo(self, checked: bool | None = None) -> None:
+        active = self.cursor_view.toggle_demo()
+        self.cursor_demo_action.setChecked(active)
+
+    def _cursor_center(self) -> None:
+        self.cursor_view.center()
+
     def _toggle_pause(self) -> None:
         self.roam_paused = not self.roam_paused
         self.pause_action.setText(self._pause_label())
@@ -605,6 +657,7 @@ class BittyWindow(QWidget):
 
     def _quit(self) -> None:
         self.stop_waiting()
+        self.cursor_view.stop()
         self._save()
         if self.hotkey_listener:
             try:
@@ -619,6 +672,7 @@ class BittyWindow(QWidget):
         self.theme = resolve_theme(key)
         self.data["theme"] = key
         self.pixmap_cache.clear()
+        self.cursor_view.set_theme(self.theme)
         self.apply_stylesheet()
         self._sync_theme_actions()
         self._save()
@@ -645,6 +699,7 @@ class BittyWindow(QWidget):
         x = max(rect.left(), min(x, rect.right() - self.width()))
         y = max(rect.top(), min(y, rect.bottom() - self.height()))
         self.anchor = QPoint(x + off_x, y + off_y)
+        self.cursor_view.set_home(self.anchor)
         self.move(x, y)
 
     def _sprite_y(self) -> int:
