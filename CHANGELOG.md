@@ -6,6 +6,30 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.3.0] - 2026-11-23
+
+### Añadido
+- **Fase 3 — mirar sesiones del proyecto**: `/bitty-ver` (atajos `Ctrl+Alt+V` en TUI y `Mod+Alt+V` en Desktop) lee un resumen acotado de hasta 6 sesiones y 6 mensajes por sesión, con 240 caracteres por mensaje, y lo muestra en el panel. No escribe en la conversación ni copia contenido sensible.
+- **Fase 4 — instalar capacidades con permiso**: `/bitty-instalar` (atajos `Ctrl+Alt+I` / `Mod+Alt+I`) ofrece un catálogo cerrado con una única capacidad inicial: `navegador` → MCP `bitty-navegador` (`npx -y @playwright/mcp@latest`).
+- **Permiso nativo obligatorio**: un hook de evaluación fuerza `ask` para `bitty.install.mcp`, así que aparece el diálogo de OpenCode antes de instalar. No se usa `save`: la aprobación no se recuerda.
+- **Aviso contextual**: si la sesión habla de una web y el MCP no está instalado, Bitty sugiere en el panel usar `/bitty-instalar`.
+- Botones **Ver sesiones** e **Instalar ver el navegador** en el panel de Desktop y opciones nuevas en la píldora del composer.
+- Contrato RPC compartido (`src/shared/rpc.ts`) para que TUI y Desktop pidan la instalación al plugin servidor, que es donde viven `permission.assert` y `mcp.transform`.
+
+### Cambiado
+- La documentación aclara que no existe una API genérica de captura de pantalla en OpenCode: «ver el navegador» significa instalar el MCP y que OpenCode lo use con sus herramientas, previo permiso.
+- Dependencias declaradas: `@opencode/schema` y `effect`, usadas por el contrato RPC.
+
+### Verificado
+- `npm run typecheck` y `npm run build` pasan con `@opencode/plugin` 2.3.2.
+- Prueba real en PTY: `/bitty-ver` muestra en el panel `He mirado 6 sesiones del proyecto` y los títulos; `/bitty-instalar` abre el estado `blocked:kind=permission` de OpenCode y, tras la respuesta, conecta `bitty-navegador`.
+- Sin `panic` y sin mensajes de error en la TUI.
+
+### Nota
+- Los binarios de la mascota flotante son idénticos a los de v2.2.0. La GUI de Desktop sigue pendiente de prueba visual porque la app no está instalada en el equipo de desarrollo.
+
+---
+
 ## [2.2.0] - 2026-11-23
 
 ### Añadido

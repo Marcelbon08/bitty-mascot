@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux** · v2.2.0
+> **Windows · macOS · Linux** · v2.3.0
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,13 +22,15 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios de los tres sistemas se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.2.0 |
+| Sistema | Descarga directa v2.3.0 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.2.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.2.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.2.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.3.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.3.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.3.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
 
-👉 **[Página del release v2.2.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.2.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.3.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.3.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+
+Los binarios de escritorio son idénticos a los de v2.2.0: el cambio de esta versión es solo del plugin.
 
 También puedes [descargar el código](https://github.com/Marcelbon08/bitty-mascot/archive/refs/heads/main.zip) e instalar desde fuente con Python.
 
@@ -61,9 +63,16 @@ Bitty ya no solo reacciona: también **acompaña con criterio**. Al terminar una
 - **En dos sitios a la vez**: el panel muestra `Veredicto`, `Razón` y `Siguiente`; la propia mascota muestra un resumen muy corto: `Bitty 💡 SIGUE`, `Bitty 💡 REVISA` o `Bitty 💡 PARA`.
 - **Bajo demanda**: `/bitty-opina`, `Ctrl+Alt+O` en la TUI y `Mod+Alt+O` en Desktop. También hay botón en el panel y opción en la píldora del composer.
 - **Sin sorpresas**: funciona primero con una heurística local (sin red ni coste). Si hay cuota de modelo, afina la sugerencia; si no la hay, Bitty se queda con la sugerencia local en lugar de fallar.
-- **Privacidad**: solo mira la sesión actual. El refinado con modelo envía un extracto acotado y nunca se usa para entrenar nada. «Ver todo» queda para la Fase 3.
+- **Privacidad**: la heurística solo mira la sesión actual y no envía nada. El refinado con modelo envía un extracto acotado y nunca se usa para entrenar nada.
 
 Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
+
+## Fases 3 y 4 (nuevo en v2.3.0)
+
+- **Fase 3 — ver más**: `/bitty-ver` (`Ctrl+Alt+V` / `Mod+Alt+V`) muestra un resumen acotado de las últimas sesiones del proyecto: máximo 6 sesiones, 6 mensajes por sesión y 240 caracteres por mensaje. No copia contenido a la conversación.
+- **Fase 4 — instalar con permiso**: `/bitty-instalar` (`Ctrl+Alt+I` / `Mod+Alt+I`) ofrece un catálogo cerrado: por ahora solo el MCP de Playwright (`bitty-navegador`) para abrir y leer páginas. Antes de instalar aparece el **diálogo nativo de permisos** de OpenCode; si rechazas, no se instala nada.
+- **Permiso cada vez**: Bitty no guarda la aprobación y nunca ejecuta comandos arbitrarios ni instala extensiones del navegador por su cuenta.
+- **Sin captura de pantalla**: OpenCode no expone una API genérica para ver la pantalla; la capacidad disponible es el MCP del navegador, que OpenCode usa con sus herramientas cuando tú lo autorizas.
 
 ## Vista previa
 
@@ -72,6 +81,13 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.3.0
+
+- **Fase 3**: `/bitty-ver` lee un resumen acotado de las sesiones recientes del proyecto y lo muestra en el panel.
+- **Fase 4**: `/bitty-instalar` añade el MCP de Playwright para ver el navegador, siempre tras el diálogo nativo de permisos y sin recordar la decisión.
+- **Aviso contextual**: si la sesión habla de una web y el MCP no está, Bitty sugiere usar `/bitty-instalar`.
+- **Atajos nuevos**: `Ctrl+Alt+V` / `Mod+Alt+V` y `Ctrl+Alt+I` / `Mod+Alt+I`.
 
 ## Novedades de v2.2.0
 
@@ -205,7 +221,7 @@ bitty-mascot/
 │   ├── state.py              # Persistencia portable
 │   └── resources/            # 21 sprites + icono
 ├── agent/bitty.md            # Identidad de Bitty
-├── plugin/                   # Plugin para OpenCode TUI y Desktop (v2.2.0)
+├── plugin/                   # Plugin para OpenCode TUI y Desktop (v2.3.0)
 │   ├── src/index.ts          # Parte servidor
 │   ├── src/tui.tsx           # Parte terminal
 │   ├── src/gui.tsx           # Parte Desktop

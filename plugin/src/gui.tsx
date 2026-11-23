@@ -24,6 +24,9 @@ import {
   type OpinionState,
 } from "./shared/opinion"
 import { localOpinion, opinionFromModel } from "./shared/opina"
+import { CAPACITIES, needsBrowser } from "./shared/capacities"
+import { scanProject } from "./shared/scan"
+import { BittyRpc } from "./shared/rpc"
 
 const SETTLED_EVENTS = new Set([
   "session.idle",
@@ -39,6 +42,7 @@ const SETTLED_EVENTS = new Set([
 
 const [mood, setMood] = createSignal<Mood>("idle")
 const [opinion, setOpinion] = createSignal<OpinionState>(EMPTY_OPINION)
+const [note, setNote] = createSignal("")
 const signals: string[] = []
 
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -58,7 +62,13 @@ export default Plugin.define({
       "opinion.title": "Bitty's suggestion (does not change your session)",
       "opinion.hint": "I have an idea. Ask me and I'll tell you briefly.",
       "opinion.thinking": "Looking at the session…",
-      "panel.footer": "/bitty-opina refines it · Mod+Alt+B closes",
+      "command.view": "Bitty: view project sessions",
+      "command.install": "Bitty: install browser view (asks permission)",
+      "pill.view": "View recent sessions",
+      "pill.install": "Install browser view",
+      "panel.view": "View sessions",
+      "panel.install": "Install browser view",
+      "panel.footer": "/bitty-ver · /bitty-instalar · Mod+Alt+B closes",
     },
     es: {
       title: "Bitty",
@@ -73,7 +83,13 @@ export default Plugin.define({
       "opinion.title": "Sugerencia de Bitty (no modifica tu sesión)",
       "opinion.hint": "Tengo una idea. Pídemela y te la digo en corto.",
       "opinion.thinking": "Mirando la sesión…",
-      "panel.footer": "/bitty-opina afina la sugerencia · Mod+Alt+B cierra",
+      "command.view": "Bitty: ver sesiones del proyecto",
+      "command.install": "Bitty: instalar ver el navegador (pide permiso)",
+      "pill.view": "Ver sesiones recientes",
+      "pill.install": "Instalar ver el navegador",
+      "panel.view": "Ver sesiones",
+      "panel.install": "Instalar ver el navegador",
+      "panel.footer": "/bitty-ver · /bitty-instalar · Mod+Alt+B cierra",
     },
   },
   setup(ctx) {
@@ -84,6 +100,60 @@ export default Plugin.define({
       setMood(moodFromVerdict(value.verdict))
     }
 
+    /** Fase 3: resumen acotado de las sesiones recientes del proyecto. */
+    const viewAll = async () => {
+      const session = ctx.sessions.current()
+      if (!session) {
+        setNote("Abre una sesión para poder mirar el proyecto.")
+        return
+      }
+      try {
+        const scan = await scanProject(session.server.client, {
+          directory: session.location?.directory,
+          limit: 6,
+          perSession: 6,
+        })
+        const titles = scan.sessions.map((item) => `· ${item.title}`).join("\n")
+        setNote(`He mirado ${scan.sessions.length} sesiones del proyecto:\n${titles || "· (sin sesiones)"}\nSolo leo un resumen; no copio nada.`)
+        setMood("done")
+      } catch {
+        setNote("No he podido leer las sesiones del proyecto ahora mismo.")
+        setMood("error")
+      }
+    }
+
+    /** Fase 4: permiso nativo e instalación del MCP del catálogo cerrado. */
+    const installBrowser = async (session: { id: string; location?: { directory: string } } | undefined) => {
+      if (!session) {
+        setNote("Abre una sesión para poder pedir el permiso.")
+        return
+      }
+      try {
+        const result: any = await ctx.client.rpc(BittyRpc).install({
+          capacity: "navegador",
+          sessionID: session.id,
+          ...(session.location?.directory ? { directory: session.location.directory } : {}),
+        })
+        setNote(result.message)
+        setMood(result.ok ? "done" : "error")
+      } catch {
+        setNote("No se pudo completar la instalación. Revisa el diálogo de permisos.")
+        setMood("error")
+      }
+    }
+
+    const browserAvailable = async (session: { location?: { directory: string } } | undefined) => {
+      try {
+        const list: any = await ctx.client.mcp.list(
+          session?.location?.directory ? { location: { directory: session.location.directory } } : undefined,
+        )
+        const servers: any[] = Array.isArray(list?.data) ? list.data : []
+        return servers.some((server: any) => server?.name === CAPACITIES.navegador.mcpName)
+      } catch {
+        return false
+      }
+    }
+
     const react = (type: string) => {
       signals.push(type)
       if (signals.length > 40) signals.shift()
@@ -91,6 +161,7 @@ export default Plugin.define({
       if (type === "session.created") {
         signals.length = 0
         setOpinion(EMPTY_OPINION)
+        setNote("")
         setMood("idle")
         return
       }
@@ -128,6 +199,11 @@ export default Plugin.define({
 
       const fallback = localOpinion({ messages, signals: recentSignals })
       show(fallback)
+
+      const userText = messages.map((m: any) => String(m?.text ?? "")).join(" ")
+      if (needsBrowser(userText) && !(await browserAvailable(ctx.sessions.current()))) {
+        setNote("Veo que se trata de una web. Si quieres que mire la página, usa /bitty-instalar y acepta el permiso.")
+      }
 
       if (allowModel) {
         try {
@@ -180,17 +256,27 @@ export default Plugin.define({
             {face().art}
           </pre>
           <div style={{ "font-size": "12px", opacity: "0.8" }}>{`Bitty · ${face().label}`}</div>
-          <button
-            style={{
-              cursor: "pointer",
-              padding: "4px 10px",
-              "font-family": "inherit",
-            }}
-            disabled={opinion().status === "thinking"}
-            onClick={() => void refresh(true)}
-          >
-            {ctx.t("opinion.ask")}
-          </button>
+          <div style={{ display: "flex", gap: "6px", "flex-wrap": "wrap", "justify-content": "center" }}>
+            <button
+              style={{ cursor: "pointer", padding: "4px 10px", "font-family": "inherit" }}
+              disabled={opinion().status === "thinking"}
+              onClick={() => void refresh(true)}
+            >
+              {ctx.t("opinion.ask")}
+            </button>
+            <button
+              style={{ cursor: "pointer", padding: "4px 10px", "font-family": "inherit" }}
+              onClick={() => void viewAll()}
+            >
+              {ctx.t("panel.view")}
+            </button>
+            <button
+              style={{ cursor: "pointer", padding: "4px 10px", "font-family": "inherit" }}
+              onClick={() => void installBrowser(ctx.sessions.current())}
+            >
+              {ctx.t("panel.install")}
+            </button>
+          </div>
           <Show when={opinion().status === "ready" && opinion().opinion}>
             <div
               style={{
@@ -210,6 +296,19 @@ export default Plugin.define({
           </Show>
           <Show when={opinion().status === "idea"}>
             <div style={{ "font-size": "12px", opacity: "0.8" }}>{ctx.t("opinion.hint")}</div>
+          </Show>
+          <Show when={note().length > 0}>
+            <div
+              style={{
+                width: "100%",
+                border: "1px solid var(--border-base, currentColor)",
+                padding: "8px",
+                "font-size": "12px",
+                "white-space": "pre-wrap",
+              }}
+            >
+              {note()}
+            </div>
           </Show>
           <div style={{ "font-size": "11px", opacity: "0.6" }}>Soy Bitty, tu mascota de OpenCode</div>
           <div style={{ "font-size": "10px", opacity: "0.5" }}>{ctx.t("panel.footer")}</div>
@@ -269,6 +368,32 @@ export default Plugin.define({
       },
     }))
 
+    ctx.add(Command, (): Command => ({
+      id: "ver",
+      title: ctx.t("command.view"),
+      keywords: "bitty sesiones proyecto ver",
+      group: ctx.t("command.group"),
+      bind: "mod+alt+v",
+      slash: { name: "bitty-ver" },
+      featured: true,
+      run: () => {
+        void viewAll()
+      },
+    }))
+
+    ctx.add(Command, (): Command => ({
+      id: "instalar",
+      title: ctx.t("command.install"),
+      keywords: "bitty instalar navegador mcp permiso",
+      group: ctx.t("command.group"),
+      bind: "mod+alt+i",
+      slash: { name: "bitty-instalar" },
+      featured: true,
+      run: () => {
+        void installBrowser(ctx.sessions.current())
+      },
+    }))
+
     ctx.add(MenuItem, (): MenuItem => {
       const session = ctx.sessions.current()
       return {
@@ -302,6 +427,16 @@ export default Plugin.define({
               id: "opine",
               label: ctx.t("pill.opine"),
               run: () => void refresh(true, input.session.id),
+            },
+            {
+              id: "view",
+              label: ctx.t("pill.view"),
+              run: () => void viewAll(),
+            },
+            {
+              id: "install",
+              label: ctx.t("pill.install"),
+              run: () => void installBrowser(input.session),
             },
           ],
         }

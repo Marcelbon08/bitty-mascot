@@ -1,6 +1,6 @@
 {
   "name": "opencode-bitty-plugin",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Bitty, la mascota reactiva de OpenCode, dentro de la terminal y de OpenCode Desktop",
   "type": "module",
   "exports": {
@@ -18,7 +18,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@opencode/plugin": "^2.3.2"
+    "@opencode/plugin": "^2.3.2",
+    "@opencode/schema": "^2.3.2",
+    "effect": "^4.1.0"
   },
   "peerDependencies": {
     "@opentui/core": ">=0.6.6",

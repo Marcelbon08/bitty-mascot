@@ -17,6 +17,9 @@ import {
   type OpinionState,
 } from "./shared/opinion"
 import { localOpinion, opinionFromModel } from "./shared/opina"
+import { CAPACITIES, needsBrowser } from "./shared/capacities"
+import { scanProject } from "./shared/scan"
+import { BittyRpc } from "./shared/rpc"
 
 /** Cuando la sesión se asienta, Bitty suelta su sugerencia sin que se le pida. */
 const SETTLED_EVENTS = new Set([
@@ -36,6 +39,7 @@ export default Plugin.define({
   setup(context) {
     const [mood, setMood] = createSignal<Mood>("idle")
     const [opinion, setOpinion] = createSignal<OpinionState>(EMPTY_OPINION)
+    const [note, setNote] = createSignal("")
     const face = () => FACES[mood()]
 
     const signals: string[] = []
@@ -46,6 +50,57 @@ export default Plugin.define({
     const show = (value: Opinion) => {
       setOpinion({ status: "ready", opinion: value })
       setMood(moodFromVerdict(value.verdict))
+    }
+
+    /** Fase 3: echar un vistazo a las sesiones recientes del proyecto. */
+    const viewAll = async () => {
+      try {
+        const scan = await scanProject(context.client, {
+          directory: context.location?.directory,
+          limit: 6,
+          perSession: 6,
+        })
+        const titles = scan.sessions.map((session) => `· ${session.title}`).join("\n")
+        setNote(
+          `He mirado ${scan.sessions.length} sesiones del proyecto:\n${titles || "· (sin sesiones)"}\nSolo leo un resumen; no copio nada.`,
+        )
+        setMood("done")
+      } catch {
+        setNote("No he podido leer las sesiones del proyecto ahora mismo.")
+        setMood("error")
+      }
+    }
+
+    const browserAvailable = async () => {
+      try {
+        const list: any = await context.client.mcp.list(
+          context.location?.directory ? { location: { directory: context.location.directory } } : undefined,
+        )
+        const servers: any[] = Array.isArray(list?.data) ? list.data : []
+        return servers.some((server: any) => server?.name === CAPACITIES.navegador.mcpName)
+      } catch {
+        return false
+      }
+    }
+
+    /** Fase 4: pedir permiso nativo e instalar una capacidad del catálogo cerrado. */
+    const installBrowser = async () => {
+      if (!sessionID) {
+        setNote("Abre una sesión para poder pedir el permiso.")
+        return
+      }
+      try {
+        const result: any = await context.client.rpc(BittyRpc).install({
+          capacity: "navegador",
+          sessionID,
+          ...(context.location?.directory ? { directory: context.location.directory } : {}),
+        })
+        setNote(result.message)
+        setMood(result.ok ? "done" : "error")
+      } catch {
+        setNote("No se pudo completar la instalación. Revisa el diálogo de permisos.")
+        setMood("error")
+      }
     }
 
     /**
@@ -71,6 +126,12 @@ export default Plugin.define({
       const fallback = localOpinion({ messages, signals: recentSignals })
       show(fallback)
 
+      // Si la sesión habla de una web y aún no hay MCP, ofrezco instalarlo; nunca lo hago sin permiso.
+      const userText = messages.map((m: any) => String(m?.text ?? "")).join(" ")
+      if (needsBrowser(userText) && !(await browserAvailable())) {
+        setNote("Veo que se trata de una web. Si quieres que mire la página, escribe /bitty-instalar y acepta el permiso.")
+      }
+
       if (allowModel) {
         try {
           const result: any = await context.client.experimental.generate.text({
@@ -92,6 +153,7 @@ export default Plugin.define({
       if (type === "session.created") {
         signals.length = 0
         setOpinion(EMPTY_OPINION)
+        setNote("")
         setMood("idle")
         return
       }
@@ -142,6 +204,30 @@ export default Plugin.define({
             void refresh(true)
           },
         },
+        {
+          id: "bitty.ver",
+          title: "Bitty: ver sesiones del proyecto",
+          group: "Bitty",
+          bind: "ctrl+alt+v",
+          palette: true,
+          slash: { name: "bitty-ver" },
+          suggested: true,
+          run: () => {
+            void viewAll()
+          },
+        },
+        {
+          id: "bitty.instalar",
+          title: "Bitty: instalar ver el navegador (con permiso)",
+          group: "Bitty",
+          bind: "ctrl+alt+i",
+          palette: true,
+          slash: { name: "bitty-instalar" },
+          suggested: true,
+          run: () => {
+            void installBrowser()
+          },
+        },
       ],
     }))
 
@@ -181,7 +267,10 @@ export default Plugin.define({
             <Show when={opinion().status === "idea"}>
               <text fg={context.theme.text.base}>{"Tengo una idea. Usa /bitty-opina para escucharla."}</text>
             </Show>
-            <text fg={context.theme.text.base}>{"/bitty-opina afina la sugerencia · Ctrl+Alt+B cierra"}</text>
+            <Show when={note().length > 0}>
+              <text fg={context.theme.text.base}>{note()}</text>
+            </Show>
+            <text fg={context.theme.text.base}>{"/bitty-ver mira sesiones · /bitty-instalar pide permiso · Ctrl+Alt+B cierra"}</text>
           </box>
         </Show>
       ),
