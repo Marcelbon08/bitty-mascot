@@ -1,4 +1,4 @@
-name: Construir Bitty (Windows / macOS / Linux)
+name: Construir Bitty (Windows / macOS / Linux / Fedora)
 
 on:
   push:
@@ -56,9 +56,46 @@ jobs:
           path: Bitty-*.zip
           if-no-files-found: error
 
+  fedora:
+    name: Fedora (contenedor)
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+    steps:
+      - name: Dependencias del sistema
+        run: |
+          dnf install -y git ca-certificates python3 python3-pip zip \
+            mesa-libGL mesa-libEGL libxcb libX11 libXext libXrandr \
+            libXrender libxkbcommon dbus-libs alsa-lib systemd-libs
+
+      - uses: actions/checkout@v4
+
+      - name: Entorno de Python
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -r requirements.txt pyinstaller
+
+      - name: Empaquetar en Fedora
+        run: .venv/bin/python build.py
+
+      - name: Comprimir paquete Fedora
+        run: |
+          mkdir -p package/Bitty
+          cp -R dist/Bitty/. package/Bitty/
+          cp agent/bitty.md install-fedora.sh package/
+          cd package
+          zip -r ../Bitty-Fedora.zip Bitty agent install-fedora.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Bitty-Fedora
+          path: Bitty-Fedora.zip
+          if-no-files-found: error
+
   release:
     name: Publicar release
-    needs: build
+    needs: [build, fedora]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
@@ -70,7 +107,7 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Crear release con los tres paquetes
+      - name: Crear release con los cuatro paquetes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

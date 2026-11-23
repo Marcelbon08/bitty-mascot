@@ -6,6 +6,23 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.4.0] - 2026-11-23
+
+### Añadido
+- **Paquete específico de Fedora**: `Bitty-Fedora.zip`, con el binario compilado dentro de un contenedor `fedora:latest` y un instalador propio (`install-fedora.sh`).
+- El zip de Fedora incluye `agent/bitty.md`, para que el agente de OpenCode reconozca a Marcelbon por su nombre y responda siempre en español, igual que la mascota flotante.
+- **Nuevo job `fedora`** en `.github/workflows/build.yml`; la release pública ahora adjunta cuatro zips (Windows, macOS, Linux y Fedora).
+
+### Cambiado
+- Versión del plugin y de la documentación actualizada a 2.4.0.
+- Se regeneran los paquetes de macOS y Linux en la misma release.
+
+### Verificado
+- Sintaxis del instalador comprobada con `bash -n`.
+- Sin cambios en el código TypeScript: la opinión, la lectura de sesiones y el permiso siguen como en v2.3.0.
+
+---
+
 ## [2.3.0] - 2026-11-23
 
 ### Añadido
@@ -26,7 +43,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - Sin `panic` y sin mensajes de error en la TUI.
 
 ### Nota
-- Los binarios de la mascota flotante son idénticos a los de v2.2.0. La GUI de Desktop sigue pendiente de prueba visual porque la app no está instalada en el equipo de desarrollo.
+- Los binarios de la mascota flotante son idénticos a los de v2.2.0. La GUI de Desktop se verificó después con capturas reales y OCR de Windows: panel, botones y píldora de Bitty aparecen correctamente.
 
 ---
 

@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux** · v2.3.0
+> **Windows · macOS · Linux · Fedora** · v2.4.0
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -20,17 +20,18 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 ## Descarga
 
-Los binarios de los tres sistemas se generan automáticamente con GitHub Actions al publicar cada versión:
+Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.3.0 |
+| Sistema | Descarga directa v2.4.0 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.3.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.3.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.3.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.0/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.3.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.3.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.4.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
-Los binarios de escritorio son idénticos a los de v2.2.0: el cambio de esta versión es solo del plugin.
+El paquete de Fedora se compila dentro de un contenedor `fedora:latest`, no se reutiliza el de Ubuntu: así las bibliotecas Qt encajan con el sistema. El zip incluye `Bitty/`, `agent/bitty.md` e `install-fedora.sh`. El instalador copia la mascota a `~/.local/share/BittyMascot`, instala el agente en `~/.config/opencode/agents/bitty.md` y configura el arranque con `systemd --user` (usa `--no-autostart` si no lo quieres). En Wayland los atajos globales pueden necesitar permisos adicionales.
 
 También puedes [descargar el código](https://github.com/Marcelbon08/bitty-mascot/archive/refs/heads/main.zip) e instalar desde fuente con Python.
 
@@ -53,7 +54,7 @@ Instalación y detalle de eventos: **[plugin/README.md](plugin/README.md)**. Req
 { "plugins": ["C:/Users/marce/Downloads/bitty-mascot/plugin"] }
 ```
 
-> Los binarios de escritorio siguen siendo idénticos a los de v2.0.1; esta versión añade el plugin sin cambios en la app flotante.
+> Los binarios de Windows, macOS y Linux siguen siendo los mismos que en v2.3.0; v2.4.0 añade el paquete específico de Fedora y la versión del plugin.
 
 ## Bitty opina (nuevo en v2.2.0)
 
@@ -81,6 +82,13 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.4.0
+
+- **Paquete para Fedora**: `Bitty-Fedora.zip`, compilado en un contenedor Fedora con Qt nativo e instalador propio.
+- **Reconocimiento de Marcelbon**: el zip de Fedora incluye `agent/bitty.md`, que deja al agente de OpenCode hablando siempre en español y tratándote por tu nombre, igual que la mascota flotante.
+- **Paquetes actualizados**: se regeneran los zips de Windows, macOS y Linux junto con el de Fedora en la misma release.
+- **Sin cambios en el comportamiento**: opinión, sesiones y permisos siguen como en v2.3.0.
 
 ## Novedades de v2.3.0
 
@@ -221,7 +229,7 @@ bitty-mascot/
 │   ├── state.py              # Persistencia portable
 │   └── resources/            # 21 sprites + icono
 ├── agent/bitty.md            # Identidad de Bitty
-├── plugin/                   # Plugin para OpenCode TUI y Desktop (v2.3.0)
+├── plugin/                   # Plugin para OpenCode TUI y Desktop (v2.4.0)
 │   ├── src/index.ts          # Parte servidor
 │   ├── src/tui.tsx           # Parte terminal
 │   ├── src/gui.tsx           # Parte Desktop
