@@ -2,6 +2,7 @@ import { Plugin } from "@opencode/plugin"
 import { CAPACITIES, type CapacityId } from "./shared/capacities"
 import { installCapacity } from "./shared/install"
 import { BittyRpc } from "./shared/rpc"
+import { safeAgent, safeDirectory, safeSessionId } from "./shared/validate"
 
 function capacityId(value: string): CapacityId | undefined {
   return Object.prototype.hasOwnProperty.call(CAPACITIES, value) ? (value as CapacityId) : undefined
@@ -39,15 +40,25 @@ export default Plugin.define({
           return {
             ok: false,
             title: "Bitty",
-            message: `Capacidad desconocida: ${input.capacity}`,
+            message: "Capacidad desconocida: no he instalado nada.",
+            denied: false,
+          }
+        }
+
+        const sessionID = safeSessionId(input.sessionID)
+        if (!sessionID) {
+          return {
+            ok: false,
+            title: "Bitty",
+            message: "Sesión no válida: no he instalado nada.",
             denied: false,
           }
         }
 
         const result = await installCapacity(ctx, id, {
-          sessionID: input.sessionID,
-          directory: input.directory,
-          agent: input.agent,
+          sessionID,
+          directory: safeDirectory(input.directory),
+          agent: safeAgent(input.agent) || undefined,
         })
         return {
           ok: result.ok,

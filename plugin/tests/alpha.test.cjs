@@ -8,6 +8,9 @@ fs.writeFileSync(path.join(build, "package.json"), '{"type":"commonjs"}\n')
 const { CAPACITIES, CAPACITY_IDS, capacityFromText, needsBrowser } = require(path.join(build, "capacities.js"))
 const { installCapacity } = require(path.join(build, "install.js"))
 const { scanProject, scanToText } = require(path.join(build, "scan.js"))
+const { opinionSourceLabel, pushHistory } = require(path.join(build, "opinion.js"))
+const { localOpinion, opinionFromModel } = require(path.join(build, "opina.js"))
+const { safeSessionId, safeAgent, safeDirectory } = require(path.join(build, "validate.js"))
 
 const results = []
 function check(name, fn) {
@@ -108,6 +111,42 @@ async function main() {
     assert.ok(scan.truncated)
     assert.ok(text.length <= 4200)
     assert.ok(scan.sessions[0].title.length <= 120)
+  })
+
+  check("validacion_rpc", () => {
+    assert.equal(safeSessionId("ses_123"), "ses_123")
+    for (const bad of ["--auto", "-h", "a b", "x".repeat(200), null, 42]) {
+      assert.equal(safeSessionId(bad), "", String(bad))
+    }
+    assert.equal(safeAgent("bitty"), "bitty")
+    assert.equal(safeAgent("../../etc"), "")
+    assert.equal(safeDirectory("C:/Users/marce/proyecto"), "C:/Users/marce/proyecto")
+    assert.equal(safeDirectory("a\x00b"), undefined)
+    assert.equal(safeDirectory("x".repeat(1000)).length, 512)
+  })
+
+  check("motor_opinion_transparente", () => {
+    const fallback = localOpinion({ messages: [{ text: "hola" }] })
+    assert.equal(fallback.source, "local")
+    assert.equal(opinionSourceLabel(fallback.source), "heurística local")
+    const model = opinionFromModel("Veredicto: SEGUIR\nRazón: bien\nSiguiente: sigue", fallback)
+    assert.equal(model.source, "model")
+    assert.equal(opinionSourceLabel(model.source), "modelo")
+    // Si el modelo no respeta el formato, se conserva la heurística y su motor.
+    assert.equal(opinionFromModel("respuesta sin formato", fallback).source, "local")
+  })
+
+  check("historial_opiniones", () => {
+    const first = localOpinion({ messages: [{ text: "hola" }] })
+    const second = opinionFromModel("Veredicto: PARAR\nRazón: ya vale\nSiguiente: descansa", first)
+    const history = pushHistory(pushHistory([], first), second)
+    assert.equal(history.length, 2)
+    assert.equal(history[0].opinion.source, "model")
+    assert.equal(history[1].opinion.source, "local")
+    assert.match(history[0].at, /^\d{1,2}:\d{2}$/)
+    let capped = []
+    for (let i = 0; i < 9; i += 1) capped = pushHistory(capped, first)
+    assert.equal(capped.length, 5)
   })
 
   console.log(results.join("\n"))

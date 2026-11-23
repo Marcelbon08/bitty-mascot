@@ -7,7 +7,7 @@ import {
   Slot,
   createKeyed,
 } from "@opencode/plugin/gui"
-import { createSignal, onCleanup, Show } from "solid-js"
+import { createSignal, For, onCleanup, Show } from "solid-js"
 import {
   BITTY_EVENTS,
   FACES,
@@ -20,7 +20,10 @@ import {
   buildOpinionPrompt,
   messagesFrom,
   opinionBadge,
+  opinionSourceLabel,
+  pushHistory,
   type Opinion,
+  type OpinionEntry,
   type OpinionState,
 } from "./shared/opinion"
 import { localOpinion, opinionFromModel } from "./shared/opina"
@@ -42,6 +45,7 @@ const SETTLED_EVENTS = new Set([
 
 const [mood, setMood] = createSignal<Mood>("idle")
 const [opinion, setOpinion] = createSignal<OpinionState>(EMPTY_OPINION)
+const [history, setHistory] = createSignal<OpinionEntry[]>([])
 const [note, setNote] = createSignal("")
 const signals: string[] = []
 
@@ -62,6 +66,8 @@ export default Plugin.define({
       "opinion.title": "Bitty's suggestion (does not change your session)",
       "opinion.hint": "I have an idea. Ask me and I'll tell you briefly.",
       "opinion.thinking": "Looking at the session…",
+      "opinion.motor": "Engine",
+      "opinion.history": "History (last 5)",
       "command.view": "Bitty: view project sessions",
       "command.install": "Bitty: install browser view (asks permission)",
       "pill.view": "View recent sessions",
@@ -83,6 +89,8 @@ export default Plugin.define({
       "opinion.title": "Sugerencia de Bitty (no modifica tu sesión)",
       "opinion.hint": "Tengo una idea. Pídemela y te la digo en corto.",
       "opinion.thinking": "Mirando la sesión…",
+      "opinion.motor": "Motor",
+      "opinion.history": "Historial (últimas 5)",
       "command.view": "Bitty: ver sesiones del proyecto",
       "command.install": "Bitty: instalar ver el navegador (pide permiso)",
       "pill.view": "Ver sesiones recientes",
@@ -97,6 +105,7 @@ export default Plugin.define({
 
     const show = (value: Opinion) => {
       setOpinion({ status: "ready", opinion: value })
+      setHistory((previous) => pushHistory(previous, value))
       setMood(moodFromVerdict(value.verdict))
     }
 
@@ -161,6 +170,7 @@ export default Plugin.define({
       if (type === "session.created") {
         signals.length = 0
         setOpinion(EMPTY_OPINION)
+        setHistory([])
         setNote("")
         setMood("idle")
         return
@@ -288,7 +298,30 @@ export default Plugin.define({
               }}
             >
               <div style={{ opacity: "0.7", "margin-bottom": "4px" }}>{ctx.t("opinion.title")}</div>
+              <div style={{ opacity: "0.7", "margin-bottom": "4px" }}>
+                {ctx.t("opinion.motor")}: {opinionSourceLabel(opinion().opinion?.source)}
+              </div>
               <div>{opinion().opinion?.label}</div>
+            </div>
+          </Show>
+          <Show when={history().length > 1}>
+            <div
+              style={{
+                width: "100%",
+                border: "1px solid var(--border-base, currentColor)",
+                padding: "8px",
+                "font-size": "11px",
+                opacity: "0.8",
+              }}
+            >
+              <div style={{ "margin-bottom": "4px" }}>{ctx.t("opinion.history")}</div>
+              <For each={history()}>
+                {(entry) => (
+                  <div>
+                    {entry.at} · {entry.opinion.short} · {opinionSourceLabel(entry.opinion.source)}
+                  </div>
+                )}
+              </For>
             </div>
           </Show>
           <Show when={opinion().status === "thinking"}>

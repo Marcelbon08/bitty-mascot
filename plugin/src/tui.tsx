@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 import { Plugin } from "@opencode/plugin/tui"
-import { createSignal, Show } from "solid-js"
+import { createSignal, For, Show } from "solid-js"
 import {
   BITTY_EVENTS,
   FACES,
@@ -13,7 +13,10 @@ import {
   buildOpinionPrompt,
   messagesFrom,
   opinionBadge,
+  opinionSourceLabel,
+  pushHistory,
   type Opinion,
+  type OpinionEntry,
   type OpinionState,
 } from "./shared/opinion"
 import { localOpinion, opinionFromModel } from "./shared/opina"
@@ -39,6 +42,7 @@ export default Plugin.define({
   setup(context) {
     const [mood, setMood] = createSignal<Mood>("idle")
     const [opinion, setOpinion] = createSignal<OpinionState>(EMPTY_OPINION)
+    const [history, setHistory] = createSignal<OpinionEntry[]>([])
     const [note, setNote] = createSignal("")
     const face = () => FACES[mood()]
 
@@ -49,6 +53,7 @@ export default Plugin.define({
 
     const show = (value: Opinion) => {
       setOpinion({ status: "ready", opinion: value })
+      setHistory((previous) => pushHistory(previous, value))
       setMood(moodFromVerdict(value.verdict))
     }
 
@@ -153,6 +158,7 @@ export default Plugin.define({
       if (type === "session.created") {
         signals.length = 0
         setOpinion(EMPTY_OPINION)
+        setHistory([])
         setNote("")
         setMood("idle")
         return
@@ -259,7 +265,18 @@ export default Plugin.define({
             <text fg={context.theme.text.base}>{`Bitty · ${face().label}`}</text>
             <Show when={opinion().status === "ready" && opinion().opinion}>
               <text fg={context.theme.text.base}>{" Sugerencia de Bitty (no modifica tu sesión)"}</text>
+              <text fg={context.theme.text.base}>{` Motor: ${opinionSourceLabel(opinion().opinion?.source)}`}</text>
               <text fg={context.theme.text.base}>{opinion().opinion?.label}</text>
+            </Show>
+            <Show when={history().length > 1}>
+              <text fg={context.theme.text.base}>{" Historial (últimas 5)"}</text>
+              <For each={history()}>
+                {(entry) => (
+                  <text fg={context.theme.text.base}>
+                    {`  ${entry.at} · ${entry.opinion.short} · ${opinionSourceLabel(entry.opinion.source)}`}
+                  </text>
+                )}
+              </For>
             </Show>
             <Show when={opinion().status === "thinking"}>
               <text fg={context.theme.text.base}>{"Mirando la sesión…"}</text>

@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.4.2
+> **Windows · macOS · Linux · Fedora** · v2.4.3
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,16 +22,16 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.4.2 |
+| Sistema | Descarga directa v2.4.3 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.2/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.2/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.2/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.2/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.3/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.3/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.3/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.3/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.4.2](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.2)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.4.3](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.3)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
-Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1.
+Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI.
 
 El paquete de Fedora se compila dentro de un contenedor `fedora:latest`, no se reutiliza el de Ubuntu: así las bibliotecas Qt encajan con el sistema. El zip incluye `Bitty/`, `agent/bitty.md` e `install-fedora.sh`. El instalador copia la mascota a `~/.local/share/BittyMascot`, instala el agente en `~/.config/opencode/agents/bitty.md` y configura el arranque con `systemd --user` (usa `--no-autostart` si no lo quieres). En Wayland los atajos globales pueden necesitar permisos adicionales.
 
@@ -85,10 +85,17 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
 
+## Novedades de v2.4.3
+
+- **Motor visible**: el panel de la TUI y de Desktop indica si cada sugerencia viene de la *heurística local* o del *modelo*.
+- **Historial de opiniones**: se guardan las últimas 5 sugerencias con hora, veredicto y motor, tanto en terminal como en Desktop.
+- **RPC validado**: un ID de sesión, agente o directorio manipulado desde la TUI/Desktop se rechaza antes de instalar nada.
+- **Green CI**: el workflow completo pasa, incluido el smoke de arranque en Fedora; la release se publica con los cuatro zips.
+
 ## Novedades de v2.4.2
 
 - **CI con tests**: cada push a `main` y cada PR ejecuta los 9 tests Python y los 5 tests Node, además de `typecheck`.
-- **Arranque real en Fedora**: el job de Fedora ahora arranca Bitty dentro de Xvfb y verifica que no se cae.
+- **Arranque real en Fedora**: el job de Fedora arranca el binario real en un contenedor Fedora y verifica que no se cae (con plugin `offscreen` para no depender de `xcb-cursor` en CI).
 - **Binarios más pequeños**: se excluyen módulos Qt no usados (WebEngine, Pdf, Qml, Multimedia...). Windows pasa de 59,6 MB a 55,2 MB; el ahorro es mayor en macOS/Linux.
 - El binario recortado se probó arrancando en Windows: sigue vivo y sin errores.
 

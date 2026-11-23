@@ -57,8 +57,9 @@ También está el botón **Pedir opinión** dentro del panel y la opción en la 
 2. Aplica una **heurística local**: detecta fallos, bugs sin verificar, sesiones largas, documentación pendiente o intención de parar.
 3. Muestra esa sugerencia al instante. Es gratis, no usa red y funciona aunque no haya cuota.
 4. Si pides la opinión de forma explícita, intenta además un **refinado stateless** con el modelo (`experimental.generate.text`, sin sesión ni mensajes nuevos). Si el modelo devuelve 429/502, Bitty conserva la sugerencia local y no muestra error.
+5. El panel indica siempre el **motor** usado (`heurística local` o `modelo`) y conserva un **historial de las 5 últimas** sugerencias con hora, veredicto y motor.
 
-> Bitty nunca escribe en tu sesión ni cancela tu trabajo. La opinión es un consejo, no una orden.
+> Bitty nunca escribe en tu sesión ni cancela tu trabajo. La opinión es un consejo, no una orden. Las sugerencias se guardan solo en memoria de la pestaña; al crear sesión nueva se limpian.
 
 ## Fase 3: mirar más sesiones
 

@@ -6,6 +6,9 @@ export type Verdict = "seguir" | "revisar" | "parar"
 
 export type OpinionStatus = "idle" | "thinking" | "idea" | "ready" | "error"
 
+/** Qué generó la sugerencia: la heurística local o el modelo. */
+export type OpinionSource = "local" | "model"
+
 export interface Opinion {
   verdict: Verdict
   reason: string
@@ -14,6 +17,8 @@ export interface Opinion {
   short: string
   /** Texto completo de la sugerencia para el panel. */
   label: string
+  /** Motor usado, para que Bitty sea transparente sobre su respuesta. */
+  source: OpinionSource
 }
 
 export interface OpinionState {
@@ -101,7 +106,31 @@ export function parseOpinion(text: string): Opinion {
     next,
     short: SHORT[verdict],
     label: `Veredicto: ${SHORT[verdict]}\nRazón: ${reason}\nSiguiente: ${next}`,
+    source: "model",
   }
+}
+
+/** Etiqueta legible del motor para mostrar en el panel. */
+export function opinionSourceLabel(source: OpinionSource | undefined): string {
+  return source === "model" ? "modelo" : "heurística local"
+}
+
+export interface OpinionEntry {
+  opinion: Opinion
+  at: string
+}
+
+/** Guarda las últimas sugerencias para ver cómo cambia el veredicto. */
+export function pushHistory(
+  history: readonly OpinionEntry[],
+  opinion: Opinion,
+  max = 5,
+): OpinionEntry[] {
+  const entry: OpinionEntry = {
+    opinion,
+    at: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+  }
+  return [entry, ...history].slice(0, Math.max(1, max))
 }
 
 /** Texto mini que se muestra en la barra/píldora de la mascota. */

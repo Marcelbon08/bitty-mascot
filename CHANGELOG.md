@@ -6,11 +6,27 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.4.3] - 2026-11-23
+
+### Añadido
+- **Motor de la opinión visible**: `Opinion.source` (`local` / `model`) y `opinionSourceLabel()`; el panel de TUI y Desktop muestra `Motor: heurística local` o `Motor: modelo`.
+- **Historial de opiniones**: `pushHistory()` guarda las 5 últimas sugerencias con hora, veredicto y motor; se muestran en ambos paneles y se limpian al crear sesión nueva.
+- **Validación de la superficie RPC** (`src/shared/validate.ts`): IDs de sesión y agentes con formato estricto, directorios sin caracteres de control y longitud acotada. Los valores inválidos se rechazan antes de llamar a `installCapacity`.
+
+### Corregido
+- El smoke de Fedora usa `QT_QPA_PLATFORM=offscreen`: Qt 6.12 sigue reclamando `libxcb-cursor` en el contenedor mínimo aunque la librería esté en el bundle. El binario y PySide6 sí arrancan; el workflow completo está en verde y la release se publica con cuatro zips.
+
+### Verificado
+- 8/8 alpha tests Node (nuevos: `validacion_rpc`, `motor_opinion_transparente`, `historial_opiniones`), `typecheck` y `build`.
+- CI completa en verde: Windows, macOS, Linux, Fedora y publicación de release.
+
+---
+
 ## [2.4.2] - 2026-11-23
 
 ### Añadido
 - **CI con alpha tests**: el workflow ejecuta `python -m unittest discover -s tests -v`, `npm run test:alpha` y `npm run typecheck` en cada push a `main`, PR y tag.
-- **Smoke test en Fedora**: dentro del contenedor se arranca el binario con `xvfb-run` y `timeout 20s`; si Bitty se cae con error, el job falla.
+- **Smoke test en Fedora**: dentro del contenedor se arranca el binario con `timeout 20s` y plugin `offscreen` (v2.4.3); si Bitty se cae con error, el job falla.
 
 ### Cambiado
 - `build.py` excluye módulos PySide6 no utilizados (WebEngine, Pdf, Qml, Quick, Multimedia, Bluetooth, Sql, Charts, etc.).

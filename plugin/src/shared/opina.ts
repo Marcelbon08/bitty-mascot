@@ -97,6 +97,7 @@ export function localOpinion(request: OpinionRequest): Opinion {
     next,
     short,
     label: `Veredicto: ${short}\nRazón: ${reason}\nSiguiente: ${next}`,
+    source: "local",
   }
 }
 
