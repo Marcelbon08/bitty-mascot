@@ -73,6 +73,8 @@ Con `/bitty-ver` (o `Ctrl+Alt+V` / `Mod+Alt+V`) Bitty lee un **resumen acotado**
 
 No hay una API genérica de OpenCode para «capturar la pantalla». Para acercarse a lo que pides de «ver el navegador», Bitty usa la Fase 4: instala un servidor MCP de Playwright y entonces OpenCode puede abrir y leer páginas con sus herramientas.
 
+Cuando la sesión habla de una web, el aviso es contextual: si el MCP ya está disponible, Bitty ofrece mirar la página con esas herramientas; si no lo está, explica que hay que instalarlo con permiso. Nunca instala nada por su cuenta.
+
 ## Fase 4: instalar capacidades con permiso
 
 `/bitty-instalar` (o `Ctrl+Alt+I` / `Mod+Alt+I`) no instala nada por su cuenta:

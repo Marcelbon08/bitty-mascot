@@ -27,7 +27,8 @@ import {
   type OpinionState,
 } from "./shared/opinion"
 import { localOpinion, opinionFromModel } from "./shared/opina"
-import { CAPACITIES, needsBrowser } from "./shared/capacities"
+import { CAPACITIES } from "./shared/capacities"
+import { browserHint } from "./shared/hint"
 import { scanProject } from "./shared/scan"
 import { BittyRpc } from "./shared/rpc"
 
@@ -211,8 +212,9 @@ export default Plugin.define({
       show(fallback)
 
       const userText = messages.map((m: any) => String(m?.text ?? "")).join(" ")
-      if (needsBrowser(userText) && !(await browserAvailable(ctx.sessions.current()))) {
-        setNote("Veo que se trata de una web. Si quieres que mire la página, usa /bitty-instalar y acepta el permiso.")
+      if (browserHint(userText, false)) {
+        const available = await browserAvailable(ctx.sessions.current())
+        setNote(browserHint(userText, available))
       }
 
       if (allowModel) {

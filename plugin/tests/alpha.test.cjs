@@ -13,6 +13,7 @@ const { localOpinion, opinionFromModel } = require(path.join(build, "opina.js"))
 const { safeSessionId, safeAgent, safeDirectory } = require(path.join(build, "validate.js"))
 const { forceAsk, INSTALL_ACTION } = require(path.join(build, "permission.js"))
 const { installFromRpc } = require(path.join(build, "handleInstall.js"))
+const { browserHint } = require(path.join(build, "hint.js"))
 
 const results = []
 function check(name, fn) {
@@ -221,6 +222,16 @@ async function main() {
     assert.equal(assertInput.directory, undefined)
     assert.equal(touched, false)
     assert.equal(evaluateHook instanceof Function, true)
+  })
+
+  check("aviso_web_contextual", () => {
+    assert.equal(browserHint("revisa el build", true), "")
+    const ready = browserHint("mira https://ejemplo.com", true)
+    assert.match(ready, /disponible/)
+    assert.doesNotMatch(ready, /instalar/)
+    const missing = browserHint("mira https://ejemplo.com", false)
+    assert.match(missing, /bitty-instalar/)
+    assert.match(missing, /permiso/)
   })
 
   console.log(results.join("\n"))

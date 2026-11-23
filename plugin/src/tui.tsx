@@ -20,7 +20,8 @@ import {
   type OpinionState,
 } from "./shared/opinion"
 import { localOpinion, opinionFromModel } from "./shared/opina"
-import { CAPACITIES, needsBrowser } from "./shared/capacities"
+import { CAPACITIES } from "./shared/capacities"
+import { browserHint } from "./shared/hint"
 import { scanProject } from "./shared/scan"
 import { BittyRpc } from "./shared/rpc"
 
@@ -131,10 +132,11 @@ export default Plugin.define({
       const fallback = localOpinion({ messages, signals: recentSignals })
       show(fallback)
 
-      // Si la sesión habla de una web y aún no hay MCP, ofrezco instalarlo; nunca lo hago sin permiso.
+      // Aviso contextual: si el MCP ya está, ofrezco mirar la web; si no, explico cómo instalarlo.
       const userText = messages.map((m: any) => String(m?.text ?? "")).join(" ")
-      if (needsBrowser(userText) && !(await browserAvailable())) {
-        setNote("Veo que se trata de una web. Si quieres que mire la página, escribe /bitty-instalar y acepta el permiso.")
+      if (browserHint(userText, false)) {
+        const available = await browserAvailable()
+        setNote(browserHint(userText, available))
       }
 
       if (allowModel) {

@@ -6,6 +6,17 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.4.6] - 2026-11-23
+
+### Añadido
+- **Aviso web contextual** (`src/shared/hint.ts`): `browserHint(text, available)` devuelve un aviso distinto según el MCP `bitty-navegador` ya esté disponible. Se usa en TUI y Desktop y se comprueba antes de consultar `mcp.list`.
+- **[MEJORAS.md](MEJORAS.md)**: notas de mejoras pendientes, con la explicación más clara del problema en Desktop y la revisión de «Instalar ver el navegador» apuntadas por Marcelbon.
+
+### Verificado
+- 12/12 alpha tests Node (nuevo `aviso_web_contextual`), 10/10 tests Python, `typecheck` y `build`.
+
+---
+
 ## [2.4.5] - 2026-11-23
 
 ### Corregido
