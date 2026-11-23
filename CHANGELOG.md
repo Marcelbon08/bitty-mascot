@@ -10,7 +10,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ### Corregido
 - `--exclude-module` de PyInstaller solo evita importar módulos Python: las DLLs/SOs de PySide6 seguían copiándose al bundle. `build.py` ahora llama a `prune_unused_qt()` y retira `Qt6Pdf`, `Qt6Qml*`, `Qt6Quick` y `Qt6VirtualKeyboard` del directorio generado (Windows y Linux; macOS intacto).
-- Windows: 59,6 MB → 46,8 MB en el zip publicado (−12,8 MB, −21 %), frente al ahorro solo local medido en v2.4.2.
+- Zips publicados v2.4.4 → v2.4.5: Windows 59,6 → 50,9 MB (−15 %), Linux 137,1 → 128,2 MB, Fedora 118,6 → 109,7 MB. macOS sin cambios. (46,8 MB fue una medición local, no el artefacto de la release.)
 
 ### Añadido
 - `tests/test_alpha.py::BundleTests::test_prune_unused_qt_keeps_required_libraries`: comprueba que se eliminan las bibliotecas sobrantes y que `QtWidgets` permanece. 10/10 tests Python.

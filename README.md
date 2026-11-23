@@ -88,7 +88,7 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 ## Novedades de v2.4.5
 
 - **Recorte de binarios arreglado**: PyInstaller copiaba las DLLs de Qt aunque el módulo estuviera excluido. Ahora `build.py` retira `Qt6Quick`, `Qt6Qml`, `Qt6Pdf` y `Qt6VirtualKeyboard` del bundle terminado.
-- **Windows: 59,6 MB → 46,8 MB** (−12,8 MB, −21 %). El binario recortado se probó arrancando: sigue vivo y sin errores.
+- **Tamaños publicados**: Windows 59,6 → 50,9 MB (−15 %), Linux 137,1 → 128,2 MB y Fedora 118,6 → 109,7 MB. macOS queda igual (46,8 MB era una medición local, no el zip de la release). El binario recortado se probó arrancando: sigue vivo y sin errores.
 - Linux/Fedora aplican el mismo recorte; macOS se deja intacto para no tocar sus frameworks.
 
 ## Novedades de v2.4.4
