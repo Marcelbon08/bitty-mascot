@@ -15,6 +15,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+import build  # noqa: E402
 from bitty import opencode, state  # noqa: E402
 
 
@@ -134,6 +135,29 @@ class StateValidationTests(unittest.TestCase):
         self.assertEqual(len(data["session_label"]), 80)
         self.assertEqual(data["theme"], "auto")
         self.assertEqual(data["session_mode"], "continue")
+
+
+class BundleTests(unittest.TestCase):
+    def test_prune_unused_qt_keeps_required_libraries(self) -> None:
+        if sys.platform == "darwin":
+            self.skipTest("Los frameworks de macOS no se recortan en esta versión")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            folder = root / "_internal" / "PySide6"
+            folder.mkdir(parents=True)
+            suffix = ".dll" if sys.platform == "win32" else ".so.6"
+            prefix = "" if sys.platform == "win32" else "lib"
+            for lib in ("Qt6Quick", "Qt6Qml", "Qt6Pdf", "Qt6Widgets"):
+                (folder / f"{prefix}{lib}{suffix}").write_bytes(b"x")
+
+            removed = build.prune_unused_qt(root)
+
+            self.assertIn(f"{prefix}Qt6Quick{suffix}", removed)
+            self.assertIn(f"{prefix}Qt6Qml{suffix}", removed)
+            self.assertIn(f"{prefix}Qt6Pdf{suffix}", removed)
+            self.assertFalse((folder / f"{prefix}Qt6Quick{suffix}").exists())
+            # QtWidgets es imprescindible: no se toca.
+            self.assertTrue((folder / f"{prefix}Qt6Widgets{suffix}").exists())
 
 
 if __name__ == "__main__":

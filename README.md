@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.4.4
+> **Windows · macOS · Linux · Fedora** · v2.4.5
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,14 +22,14 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.4.4 |
+| Sistema | Descarga directa v2.4.5 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.4/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.4/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.4/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.4/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.5/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.5/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.5/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.4.5/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.4.4](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.4)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.4.5](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.4.5)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI.
 
@@ -85,6 +85,12 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
 
+## Novedades de v2.4.5
+
+- **Recorte de binarios arreglado**: PyInstaller copiaba las DLLs de Qt aunque el módulo estuviera excluido. Ahora `build.py` retira `Qt6Quick`, `Qt6Qml`, `Qt6Pdf` y `Qt6VirtualKeyboard` del bundle terminado.
+- **Windows: 59,6 MB → 46,8 MB** (−12,8 MB, −21 %). El binario recortado se probó arrancando: sigue vivo y sin errores.
+- Linux/Fedora aplican el mismo recorte; macOS se deja intacto para no tocar sus frameworks.
+
 ## Novedades de v2.4.4
 
 - **Rechazo de permiso verificado de extremo a extremo**: la regla `ask` se aplica siempre a la acción de Bitty, y si rechazas el diálogo no se toca la configuración ni se conecta ningún MCP. El flujo completo (validar → preguntar → rechazar → no instalar) se prueba con 11 tests Node.
@@ -101,7 +107,7 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 
 - **CI con tests**: cada push a `main` y cada PR ejecuta los 9 tests Python y los 5 tests Node, además de `typecheck`.
 - **Arranque real en Fedora**: el job de Fedora arranca el binario real en un contenedor Fedora y verifica que no se cae (con plugin `offscreen` para no depender de `xcb-cursor` en CI).
-- **Binarios más pequeños**: se excluyen módulos Qt no usados (WebEngine, Pdf, Qml, Multimedia...). Windows pasa de 59,6 MB a 55,2 MB; el ahorro es mayor en macOS/Linux.
+- **Binarios más pequeños**: se excluyen módulos Qt no usados (WebEngine, Pdf, Qml, Multimedia...). La medición local daba 55,2 MB en Windows, pero los zips publicados seguían incluyendo las DLLs; el recorte real llegó en v2.4.5.
 - El binario recortado se probó arrancando en Windows: sigue vivo y sin errores.
 
 ## Novedades de v2.4.1
