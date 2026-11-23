@@ -6,6 +6,30 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.2.0] - 2026-11-23
+
+### Añadido
+- **Bitty opina**: sugerencias sobre la sesión actual, siempre como consejo y nunca escritas en la conversación de Marcelbon.
+- Comando `/bitty-opina` y atajos `Ctrl+Alt+O` (TUI) y `Mod+Alt+O` (Desktop), además del botón «Pedir opinión» en el panel y de la opción en la píldora del composer.
+- **Resumen muy corto en la propia mascota**: la barra/píldora muestra `Bitty 💡 SIGUE`, `Bitty 💡 REVISA` o `Bitty 💡 PARA`; el panel muestra el detalle completo en tres líneas: **Veredicto**, **Razón** y **Siguiente**.
+- **Aviso automático al terminar la sesión**: cuando OpenCode se asienta, Bitty calcula una sugerencia local y la deja lista. No interrumpe ni escribe nada.
+- Cuatro caras nuevas: `[?_?] OPINANDO`, `[^_^] SIGUE`, `[o_O] REVISA ESTO` y `[>_<] MEJOR PARAR`.
+- Motores compartidos `src/shared/opinion.ts` y `src/shared/opina.ts` para TUI y Desktop.
+
+### Cambiado
+- La opinión funciona en dos niveles: **heurística local** inmediata y sin coste, y refinado opcional con el modelo. Si el modelo no tiene cuota (429/502), Bitty conserva la sugerencia local en vez de mostrar un error.
+- La sugerencia se basa solo en la sesión actual. «Ver todo» (varias sesiones/proyectos) queda para la Fase 3, cuando existan las APIs de observabilidad previstas.
+
+### Verificado
+- `npm run typecheck` y `npm run build` pasan con `@opencode/plugin` 2.3.2.
+- Prueba real en PTY: `Bitty [o_o] HI` al iniciar, `Bitty 💡 REVISA` al terminar una sesión sobre un bug, y panel con `Veredicto: REVISA`, razón y siguiente paso.
+- Sin mensajes de error, sin `panic` y sin escrituras en la conversación de la sesión.
+
+### Nota
+- Los binarios de la mascota flotante no cambian respecto a v2.0.1. La GUI de Desktop sigue pendiente de prueba visual porque la app no está instalada en el equipo de desarrollo.
+
+---
+
 ## [2.1.0] - 2026-11-23
 
 ### Añadido

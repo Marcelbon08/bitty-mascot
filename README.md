@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux** · v2.1.0
+> **Windows · macOS · Linux** · v2.2.0
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,17 +22,17 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios de los tres sistemas se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.1.0 |
+| Sistema | Descarga directa v2.2.0 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.1.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.1.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.1.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.2.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.2.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.2.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
 
-👉 **[Página del release v2.1.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.1.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.2.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.2.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 También puedes [descargar el código](https://github.com/Marcelbon08/bitty-mascot/archive/refs/heads/main.zip) e instalar desde fuente con Python.
 
-## Bitty dentro de OpenCode (nuevo en v2.1.0)
+## Bitty dentro de OpenCode (desde v2.1.0)
 
 Además de la mascota flotante, Bitty es ahora un **plugin de OpenCode**: vive en la terminal y en OpenCode Desktop, como una integración al estilo de la mascota de Claude Code.
 
@@ -53,6 +53,18 @@ Instalación y detalle de eventos: **[plugin/README.md](plugin/README.md)**. Req
 
 > Los binarios de escritorio siguen siendo idénticos a los de v2.0.1; esta versión añade el plugin sin cambios en la app flotante.
 
+## Bitty opina (nuevo en v2.2.0)
+
+Bitty ya no solo reacciona: también **acompaña con criterio**. Al terminar una sesión, o cuando se lo pides, te deja una sugerencia breve sobre el trabajo que está viendo.
+
+- **Solo sugerencias**: nunca escribe en tu conversación, nunca la interrumpe y nunca toma decisiones por ti.
+- **En dos sitios a la vez**: el panel muestra `Veredicto`, `Razón` y `Siguiente`; la propia mascota muestra un resumen muy corto: `Bitty 💡 SIGUE`, `Bitty 💡 REVISA` o `Bitty 💡 PARA`.
+- **Bajo demanda**: `/bitty-opina`, `Ctrl+Alt+O` en la TUI y `Mod+Alt+O` en Desktop. También hay botón en el panel y opción en la píldora del composer.
+- **Sin sorpresas**: funciona primero con una heurística local (sin red ni coste). Si hay cuota de modelo, afina la sugerencia; si no la hay, Bitty se queda con la sugerencia local en lugar de fallar.
+- **Privacidad**: solo mira la sesión actual. El refinado con modelo envía un extracto acotado y nunca se usa para entrenar nada. «Ver todo» queda para la Fase 3.
+
+Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
+
 ## Vista previa
 
 | OpenCode | Navidad | Halloween |
@@ -60,6 +72,14 @@ Instalación y detalle de eventos: **[plugin/README.md](plugin/README.md)**. Req
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.2.0
+
+- **Bitty opina**: veredicto, razón y siguiente paso sobre la sesión actual, siempre como sugerencia.
+- **Resumen en la mascota**: `💡 SIGUE`, `💡 REVISA` o `💡 PARA` en la barra de la TUI y en la píldora de Desktop.
+- **Aviso al terminar**: la sugerencia aparece sola cuando la sesión se asienta, sin escribir nada en ella.
+- **Sin dependencia del modelo**: heurística local inmediata con refinado opcional; un 429/502 ya no deja a Bitty callada.
+- **Cuatro caras nuevas** para opinar, seguir, revisar y parar.
 
 ## Novedades de v2.1.0
 
@@ -185,7 +205,7 @@ bitty-mascot/
 │   ├── state.py              # Persistencia portable
 │   └── resources/            # 21 sprites + icono
 ├── agent/bitty.md            # Identidad de Bitty
-├── plugin/                   # Plugin para OpenCode TUI y Desktop (v2.1.0)
+├── plugin/                   # Plugin para OpenCode TUI y Desktop (v2.2.0)
 │   ├── src/index.ts          # Parte servidor
 │   ├── src/tui.tsx           # Parte terminal
 │   ├── src/gui.tsx           # Parte Desktop

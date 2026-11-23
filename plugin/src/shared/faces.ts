@@ -1,7 +1,21 @@
 // Caras de Bitty compartidas por la TUI y la app de escritorio.
 // Se dibujan con ASCII para que funcionen igual en terminal, macOS, Linux y Windows.
 
-export type Mood = "idle" | "thinking" | "working" | "writing" | "done" | "error" | "ask" | "sleepy"
+import type { Verdict } from "./opinion"
+
+export type Mood =
+  | "idle"
+  | "thinking"
+  | "working"
+  | "writing"
+  | "done"
+  | "error"
+  | "ask"
+  | "sleepy"
+  | "opinando"
+  | "seguir"
+  | "revisar"
+  | "parar"
 
 export interface Face {
   mini: string
@@ -60,6 +74,30 @@ export const FACES: Record<Mood, Face> = {
     short: "ZZZ",
     art: " .------. \n| -  - |\n|  __  |\n '------' ",
   },
+  opinando: {
+    mini: "[?_?]",
+    label: "OPINANDO",
+    short: "OPINA",
+    art: " .------. \n| ?  ? |\n|  ..  |\n '------' ",
+  },
+  seguir: {
+    mini: "[^_^]",
+    label: "SIGUE, MARCELBON",
+    short: "SIGUE",
+    art: " .------. \n| ^  ^ |\n|  \\/  |\n '------' ",
+  },
+  revisar: {
+    mini: "[o_O]",
+    label: "REVISA ESTO",
+    short: "REVISA",
+    art: " .------. \n| o  O |\n|  ~~  |\n '------' ",
+  },
+  parar: {
+    mini: "[>_<]",
+    label: "MEJOR PARAR",
+    short: "PARA",
+    art: " .------. \n| >  < |\n|  __  |\n '------' ",
+  },
 }
 
 export interface Reaction {
@@ -116,6 +154,13 @@ export function moodForEvent(type: string): Reaction | undefined {
     default:
       return undefined
   }
+}
+
+/** Cara que corresponde al veredicto de una opinión. */
+export function moodFromVerdict(verdict: Verdict): Mood {
+  if (verdict === "seguir") return "seguir"
+  if (verdict === "parar") return "parar"
+  return "revisar"
 }
 
 /** Eventos que Bitty escucha. Se usan en TUI y en Desktop. */
