@@ -2,7 +2,7 @@ BITTY MASCOT v2.0.0 - mascota flotante de OpenCode
 ==================================================
 
 HECHO CON IA: codigo, sprites y documentacion generados con inteligencia
-artificial y revisados por marce. No es un producto oficial de OpenCode.
+artificial y revisados por Marcelbon. No es un producto oficial de OpenCode.
 Ver README.md y AI_DISCLOSURE.md.
 
 NOVEDAD v2: funciona en Windows, macOS y Linux (Python + PySide6).

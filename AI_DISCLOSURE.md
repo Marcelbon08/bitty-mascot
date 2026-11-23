@@ -5,7 +5,7 @@
 ## Qué significa
 
 - El código original en PowerShell (`legacy/powershell/`), la reescritura multiplataforma en Python/PySide6 (`bitty/`), los sprites, los textos de la interfaz, la documentación, los instaladores y el workflow de compilación fueron **generados con la ayuda de un asistente de IA**.
-- El autor (**marce**) revisó, probó y ajustó el resultado en su equipo: se verificó la sintaxis, el comportamiento de la interfaz, la lectura UTF-8, las sesiones de OpenCode, el flujo completo de conversación (incluida la identidad «Soy Bitty...»), los tres temas y el ejecutable empaquetado de Windows. Los paquetes de macOS y Linux se generan en GitHub Actions y no han sido probados en hardware por el autor.
+- El autor (**Marcelbon**) revisó, probó y ajustó el resultado en su equipo: se verificó la sintaxis, el comportamiento de la interfaz, la lectura UTF-8, las sesiones de OpenCode, el flujo completo de conversación (incluida la identidad «Soy Bitty...»), los tres temas y el ejecutable empaquetado de Windows. Los paquetes de macOS y Linux se generan en GitHub Actions y no han sido probados en hardware por el autor.
 - Los sprites son **dibujados por código** por `generate-sprites.ps1` (GDI+, 64×64, sin assets externos). No se usaron imágenes de terceros.
 
 ## Qué no es

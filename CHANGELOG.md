@@ -6,6 +6,17 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.0.1] - 2026-11-23
+
+### Cambiado
+- El agente de Bitty conoce ahora el nombre del usuario: **Marcelbon**, y lo trata por su nombre. Se actualizó tanto el archivo instalado (`~/.config/opencode/agents/bitty.md`) como el texto de respaldo que crea la aplicación.
+- Autoría del proyecto actualizada a **Marcelbon** en README, licencia, aviso de IA y guía rápida.
+
+### Nota
+- La identidad de Bitty no cambia: sigue respondiendo exactamente «Soy Bitty, tu mascota de OpenCode».
+
+---
+
 ## [2.0.0] - 2026-11-23
 
 ### Añadido
