@@ -94,7 +94,7 @@ jobs:
         run: |
           dnf install -y git ca-certificates python3 python3-devel python3-pip zip \
             gcc gcc-c++ binutils kernel-headers \
-            xorg-x11-server-Xvfb xcb-util-cursor \
+            xorg-x11-server-Xvfb xcb-util-cursor fontconfig freetype \
             mesa-libGL mesa-libEGL libxcb libX11 libXext libXrandr \
             libXrender libxkbcommon dbus-libs alsa-lib systemd-libs
 
