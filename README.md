@@ -21,13 +21,13 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios de los tres sistemas se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Paquete |
+| Sistema | Descarga directa v2.0.0 |
 |---|---|
-| Windows | `Bitty-Windows.zip` → ejecuta `Bitty.exe` |
-| macOS | `Bitty-macOS.zip` → arrastra `Bitty.app` a Aplicaciones |
-| Linux | `Bitty-Linux.zip` → ejecuta `Bitty/Bitty` |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.0.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.0.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.0.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
 
-👉 **[Última versión (v2.0.0)](https://github.com/Marcelbon08/bitty-mascot/releases/latest)**
+👉 **[Página del release v2.0.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.0.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 También puedes [descargar el código](https://github.com/Marcelbon08/bitty-mascot/archive/refs/heads/main.zip) e instalar desde fuente con Python.
 
