@@ -19,7 +19,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ### Verificado
 - Sintaxis del instalador comprobada con `bash -n`.
+- Workflow completo en verde: compilan Windows, macOS, Linux y Fedora, y la release publica los cuatro zips.
+- `Bitty-Fedora.zip` revalidado tras la publicación: 388 entradas, `testzip` limpio, binario `Bitty/Bitty`, `agent/bitty.md` con la identidad y el nombre de Marcelbon, e `install-fedora.sh` con la ruta correcta del binario.
 - Sin cambios en el código TypeScript: la opinión, la lectura de sesiones y el permiso siguen como en v2.3.0.
+
+### Corregido durante la publicación
+- El contenedor Fedora necesitaba `kernel-headers`, `python3-devel` y `gcc` para compilar `evdev`.
+- El agente se copiaba a la raíz del paquete en vez de a `agent/`; el zip publicado fue reemplazado con la estructura correcta y el workflow quedó arreglado para futuras versiones.
 
 ---
 

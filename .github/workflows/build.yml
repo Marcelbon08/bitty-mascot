@@ -82,9 +82,10 @@ jobs:
 
       - name: Comprimir paquete Fedora
         run: |
-          mkdir -p package/Bitty
+          mkdir -p package/Bitty package/agent
           cp -R dist/Bitty/. package/Bitty/
-          cp agent/bitty.md install-fedora.sh package/
+          cp agent/bitty.md package/agent/bitty.md
+          cp install-fedora.sh package/
           cd package
           zip -r ../Bitty-Fedora.zip Bitty agent install-fedora.sh
 
