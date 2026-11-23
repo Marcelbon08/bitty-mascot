@@ -8,6 +8,7 @@ import stat
 import sys
 import tempfile
 import time
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -199,7 +200,11 @@ class BridgeTests(unittest.TestCase):
 
                     fake = {"path": str(Path(tmp) / "captura.png"), "uri": "file:///captura.png",
                             "width": 800, "height": 600, "screens": 1}
-                    with mock.patch("bitty.screen.capture_to_png", return_value=fake):
+                    # Stub en sys.modules: importar bitty.screen de verdad exige
+                    # las librerías GUI de PySide6, que no existen en CI headless.
+                    screen_stub = types.ModuleType("bitty.screen")
+                    screen_stub.capture_to_png = lambda destination: fake
+                    with mock.patch.dict(sys.modules, {"bitty.screen": screen_stub}):
                         client.request("POST", "/capture", "{}", auth)
                         response = client.getresponse()
                         self.assertEqual(json.loads(response.read())["uri"], "file:///captura.png")
