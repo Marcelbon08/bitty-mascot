@@ -64,7 +64,8 @@ jobs:
     steps:
       - name: Dependencias del sistema
         run: |
-          dnf install -y git ca-certificates python3 python3-pip zip \
+          dnf install -y git ca-certificates python3 python3-devel python3-pip zip \
+            gcc gcc-c++ binutils kernel-headers \
             mesa-libGL mesa-libEGL libxcb libX11 libXext libXrandr \
             libXrender libxkbcommon dbus-libs alsa-lib systemd-libs
 
