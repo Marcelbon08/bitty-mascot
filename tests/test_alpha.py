@@ -326,5 +326,30 @@ class IconFinderTests(unittest.TestCase):
             self.assertIsNone(find_icon(found_path, "otra-app"))
 
 
+class CursorSpriteTests(unittest.TestCase):
+    def test_sprite_is_regular_and_fully_colored(self) -> None:
+        from bitty.cursor_sprite import ARROW, SPRITE_COLORS, colors_for
+
+        self.assertEqual(len({len(row) for row in ARROW}), 1)
+        used = {char for row in ARROW for char in row}
+        self.assertTrue(used <= SPRITE_COLORS.keys())
+        self.assertTrue({"X", "f", "h", "s", "p", "k"} <= used)
+
+        class FakeTheme:
+            palette = {
+                "bg": (12, 12, 12),
+                "accent": (107, 143, 255),
+                "bright": (250, 250, 250),
+                "shade": (75, 75, 75),
+                "panel": (22, 22, 22),
+                "ink": (238, 238, 238),
+            }
+
+        colors = colors_for(FakeTheme())
+        self.assertNotIn(".", colors)
+        self.assertEqual(colors["k"], (238, 238, 238))
+        self.assertEqual(colors["X"], (12, 12, 12))
+
+
 if __name__ == "__main__":
     unittest.main()

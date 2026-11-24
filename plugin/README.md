@@ -83,7 +83,7 @@ El plugin registra dos herramientas en el servidor de OpenCode:
 | Herramienta | Qué hace | Permiso |
 |---|---|---|
 | `bitty_cursor` | Envía `x`, `y` al cursor virtual de la mascota. No mueve tu ratón ni escribe teclas. | Diálogo nativo **cada vez** (`bitty.cursor`), sin `save` |
-| `bitty_click` | Saca el cursor de Bitty (aparcado tras él, estilo terminal), captura la pantalla, encuentra el logo de Brave en la barra de tareas, hace su clic visual sobre él y activa la app desde una **whitelist** cerrada. Nunca mueve tu ratón real ni pulsa teclas; después el cursor **vuelve caminando detrás de Bitty**. | Diálogo nativo **cada vez** (`bitty.click`), sin `save` |
+| `bitty_click` | Saca el cursor de Bitty (aparcado tras él, puntero terminal 16×16 con mini prompt), captura la pantalla, encuentra el logo de Brave en la barra de tareas, hace su clic visual sobre él y activa la app desde una **whitelist** cerrada. Nunca mueve tu ratón real ni pulsa teclas; después el cursor hace una pausa, **vuelve en arco suave, se atenúa y se mete detrás de Bitty**. | Diálogo nativo **cada vez** (`bitty.click`), sin `save` |
 | `bitty_screen` | Captura todas las pantallas y devuelve el PNG como **data-URL inline** (`data:image/png;base64,...`) para que el modelo vea el escritorio real. Requiere un modelo con visión. | Diálogo nativo **cada vez** (`bitty.screen`), sin `save` |
 
 Cómo funciona el puente:

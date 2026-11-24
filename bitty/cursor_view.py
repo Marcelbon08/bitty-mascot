@@ -8,6 +8,7 @@ aparcado (no desaparece; se esconde en la espalda de Bitty).
 from __future__ import annotations
 
 import ctypes
+import math
 import random
 import sys
 import time
@@ -17,35 +18,25 @@ from PySide6.QtCore import Qt, QPoint, QSize, QTimer
 from PySide6.QtGui import QColor, QGuiApplication, QPainter
 from PySide6.QtWidgets import QWidget
 
+from .cursor_sprite import ARROW, colors_for
 from .themes import Theme
 from .virtual_cursor import TICK_MS, CursorNavigator, clamp_point
 
-# Puntero de 14 x 16 con estética Bitty/OpenCode: marco oscuro de terminal,
-# cuerpo con el acento del tema y un trazo brillante que recuerda un prompt.
-# X = marco (bg), f = cuerpo (accent), h = brillo/prompt (bright).
-ARROW = (
-    "h.............",
-    "Xh............",
-    "Xfh...........",
-    "Xffh..........",
-    "Xfffh.........",
-    "Xffffh........",
-    "Xfffffh.......",
-    "Xffffffh......",
-    "Xfffffffh.....",
-    "XffffXffffXh..",
-    "XfffXhXffffXh.",
-    "XffXhhXffffXh.",
-    "XfXhhhXffffXh.",
-    "XX.hh.XffffXh.",
-    "....h...XffXXh",
-    ".........XXXX.",
-)
+# El sprite vive en cursor_sprite.py: silueta de puntero con marco de terminal,
+# acento del tema, bisel y un mini prompt «>». Aquí solo se escala y se pinta.
 SCALE = 2
 # Margen suficiente para dibujar el anillo del clic sin recortarlo.
 PAD = 12
 DEMO_MS = 1400
 CLICK_MS = 450
+# La vuelta no es un corte seco: una pausa breve, un arco suave y un último
+# tramo en el que el cursor se «mete» bajo el sprite de Bitty.
+RETURN_DELAY_MS = 180
+RETURN_ARC_PX = 18
+RETURN_STEP_PX = 10.0
+RETURN_EASE = 0.16
+RETURN_FADE_FROM = 0.72
+RETURN_MIN_FADE = 0.35
 
 
 class BittyCursorView(QWidget):
@@ -72,6 +63,13 @@ class BittyCursorView(QWidget):
         self.resize(QSize(len(ARROW[0]) * SCALE + PAD * 2, len(ARROW) * SCALE + PAD * 2))
 
         self.nav = CursorNavigator(0, 0)
+        self._saved_step = self.nav.step
+        self._saved_ease = self.nav.ease
+        self.return_timer = QTimer(self)
+        self.return_timer.setSingleShot(True)
+        self.return_timer.timeout.connect(self._start_return)
+        self.return_start = QPoint()
+        self.return_total = 0.0
         self.move_timer = QTimer(self)
         self.move_timer.setInterval(TICK_MS)
         self.move_timer.timeout.connect(self._tick)
@@ -93,6 +91,9 @@ class BittyCursorView(QWidget):
         self.click_callback: Callable[[], None] | None = None
         # Tras el clic, el cursor vuelve hacia la mascota en lugar de ocultarse.
         self.returning = False
+        # Atenuación al meter el cursor bajo Bitty. Se aplica al pintar (las
+        # ventanas Tool de Qt no siempre respetan setWindowOpacity en Windows).
+        self.fade = 1.0
 
     # ------------------------------------------------------------ posición
     @staticmethod
@@ -127,6 +128,21 @@ class BittyCursorView(QWidget):
 
     def _tick(self) -> None:
         x, y = self.nav.advance()
+        if self.returning and self.return_total > 0:
+            # Arco suave hacia la espalda de Bitty: el cursor «salta» un poco
+            # en lugar de seguir una línea recta, y al llegar se desvanece
+            # cuando ya está a punto de quedar tapado por el sprite.
+            progress = 1.0 - min(1.0, self.nav.distance / self.return_total)
+            dx = self.home.x() - self.return_start.x()
+            dy = self.home.y() - self.return_start.y()
+            length = math.hypot(dx, dy) or 1.0
+            bow = math.sin(progress * math.pi) * RETURN_ARC_PX
+            x += int(round(-dy / length * bow))
+            y += int(round(dx / length * bow))
+            if progress > RETURN_FADE_FROM:
+                fade = (progress - RETURN_FADE_FROM) / (1.0 - RETURN_FADE_FROM)
+                self.fade = max(RETURN_MIN_FADE, 1.0 - (1.0 - RETURN_MIN_FADE) * fade)
+            self.update()
         self.move(x, y)
         if not self.nav.moving:
             self.move_timer.stop()
@@ -140,6 +156,9 @@ class BittyCursorView(QWidget):
         """Sale de detrás de Bitty, hace clic en (x, y) y vuelve con él."""
         self.visible = True
         self.returning = False
+        self.return_timer.stop()
+        self._restore_nav()
+        self.fade = 1.0
         self.click_callback = on_clicked
         self._set_z(True)
         self.go_to(x, y)
@@ -150,16 +169,25 @@ class BittyCursorView(QWidget):
     def park(self) -> None:
         """Se coloca detrás de la mascota: sigue ahí, pero lo tapa Bitty."""
         self.click_timer.stop()
+        self.return_timer.stop()
         self.click_started = 0.0
         self.pending_click = False
         self.returning = False
+        self.return_total = 0.0
+        self._restore_nav()
         self.click_callback = None
         self.move_timer.stop()
+        self.fade = 1.0
         self.nav.snap_to(self.home.x(), self.home.y())
         self.move(self.home.x(), self.home.y())
         self.visible = True
         self.show()
         self._tuck_behind()
+
+    def _restore_nav(self) -> None:
+        """Devuelve la velocidad normal tras la vuelta más lenta."""
+        self.nav.step = self._saved_step
+        self.nav.ease = self._saved_ease
 
     def _set_z(self, on_top: bool) -> None:
         """Coloca el cursor sobre Bitty (acción) o bajo él (aparcado)."""
@@ -195,11 +223,21 @@ class BittyCursorView(QWidget):
 
     def _start_return(self) -> None:
         """Inicia el camino de vuelta hacia la espalda de Bitty."""
+        self.return_timer.stop()
+        self.return_start = QPoint(round(self.nav.x), round(self.nav.y))
+        self.return_total = max(
+            1.0, math.hypot(self.home.x() - self.return_start.x(),
+                            self.home.y() - self.return_start.y())
+        )
+        self._saved_step, self._saved_ease = self.nav.step, self.nav.ease
+        self.nav.step = RETURN_STEP_PX
+        self.nav.ease = RETURN_EASE
         self.returning = True
         self.go_to(self.home.x(), self.home.y())
 
     def _finish_return(self) -> None:
         self.returning = False
+        self.fade = 1.0
         self.park()
 
     def _begin_click(self) -> None:
@@ -219,7 +257,8 @@ class BittyCursorView(QWidget):
             self.click_timer.stop()
             self.click_started = 0.0
             self.update()
-            self._start_return()
+            # Pequeña pausa: se ve el anillo del clic antes de darse la vuelta.
+            self.return_timer.start(RETURN_DELAY_MS)
         else:
             self.update()
 
@@ -228,6 +267,11 @@ class BittyCursorView(QWidget):
         """Activa/desactiva una ruta de puntos alrededor de la mascota."""
         self.demo = not self.demo
         if self.demo:
+            self.return_timer.stop()
+            self.returning = False
+            self.return_total = 0.0
+            self._restore_nav()
+            self.fade = 1.0
             self.visible = True
             self.show()
             self._set_z(True)
@@ -259,18 +303,25 @@ class BittyCursorView(QWidget):
         else:
             self.stop_demo()
             self.move_timer.stop()
+            self.return_timer.stop()
+            self._restore_nav()
             self.visible = False
+            self.fade = 1.0
             self.hide()
 
     def stop(self) -> None:
         self.demo_timer.stop()
         self.move_timer.stop()
         self.click_timer.stop()
+        self.return_timer.stop()
         self.click_started = 0.0
         self.pending_click = False
         self.returning = False
+        self.return_total = 0.0
+        self._restore_nav()
         self.click_callback = None
         self.visible = False
+        self.fade = 1.0
         self.hide()
 
     def set_theme(self, theme: Theme) -> None:
@@ -280,13 +331,13 @@ class BittyCursorView(QWidget):
     # -------------------------------------------------------------- paint
     def paintEvent(self, event) -> None:  # noqa: N802
         palette = self.theme.palette
-        colors = {
-            # Marco del mismo negro que la terminal de Bitty; el cuerpo toma
-            # el acento del tema (azul, rojo en Navidad, naranja en Halloween).
-            "X": QColor(*palette["bg"]),
-            "f": QColor(*palette["accent"]),
-            "h": QColor(*palette["bright"]),
-        }
+        # El sprite define su propia paleta; el punto se omite (transparente).
+        # La atenuación se aplica aquí para que se vea también en ventanas Tool.
+        colors: dict[str, QColor] = {}
+        for char, rgb in colors_for(self.theme).items():
+            color = QColor(*rgb)
+            color.setAlphaF(self.fade)
+            colors[char] = color
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         for row, line in enumerate(ARROW):
@@ -304,8 +355,8 @@ class BittyCursorView(QWidget):
             # ratón del usuario. La ventana sigue siendo transparente a eventos.
             progress = min(1.0, (time.monotonic() - self.click_started) / (CLICK_MS / 1000))
             color = QColor(*palette["bright"])
-            color.setAlphaF(1.0 - progress)
-            center = QPoint(PAD + 2, PAD + 6)
+            color.setAlphaF((1.0 - progress) * self.fade)
+            center = QPoint(PAD + 4, PAD + 4)
             radius = int(3 + 9 * progress)
             painter.setPen(color)
             painter.drawEllipse(center, radius, radius)

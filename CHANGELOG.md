@@ -12,12 +12,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - **Herramienta `bitty_click` y endpoint `/click`**: el cursor de Bitty se mueve a unas coordenadas y muestra su propio clic visual (anillo animado). Opcionalmente abre una app de una **whitelist cerrada** (`brave`); nunca se acepta un comando arbitrario. Permiso nativo `bitty.click` cada vez, sin `save`.
 - **Clic con visión en la barra de tareas** (`bitty/icon_finder.py`, `bitty/desktop_action.py`): al pedir `open: "brave"`, Bitty captura la pantalla, localiza el logo por correlación de plantilla (FFT por ejes, ~1 s) y lleva su cursor hasta él. La activación del botón se hace en el instante del clic sin mover el puntero del usuario.
 - **Cursor aparcado tras Bitty**: antes estaba siempre visible; ahora queda detrás de la mascota y solo sale durante la acción. Al terminar **no desaparece**: vuelve caminando hasta la espalda de Bitty y se queda ahí, bajando de z-order para que el sprite lo tape. Sigue siguiendo a Bitty cuando pasea. Se puede sacar a la vista con `> CURSOR: MOSTRAR`.
-- **Cursor estilo Bitty/OpenCode**: nuevo puntero pixelado de 14×16 con marco del color de terminal, cuerpo con el acento del tema y trazo brillante de prompt; cambia con los temas OPENCODE/NAVIDAD/HALLOWEEN.
+- **Cursor estilo Bitty/OpenCode** (`bitty/cursor_sprite.py`): puntero pixelado de 16×16 (32×32 px) con marco del color de terminal, cuerpo con el acento del tema, bisel de luz/sombra y un mini prompt `>` en su centro; cambia con los temas OPENCODE/NAVIDAD/HALLOWEEN. El sprite es transparente fuera de la silueta.
+- **Vuelta animada del cursor**: tras el clic hay una pausa breve para ver el anillo, luego el cursor regresa describiendo un arco suave y más lento, se atenúa al final y se mete bajo el sprite de Bitty sin desaparecer de golpe.
 - Comando local `/click x,y [brave]` en el panel de Bitty.
 - Plantilla del logo de Brave empaquetada en el binario (`build.py`) y `numpy` añadido a dependencias.
 
 ### Verificado
-- 16/16 tests Python (incluida la búsqueda del logo y rechazo de app desconocida), 14/14 tests Node, `typecheck` y build local. Demo real: Bitty vio el logo en `(1149, 1416)`, su cursor fue hasta él, hizo clic y Brave se abrió sin mover el ratón del usuario; el cursor desapareció después.
+- 16/16 tests Python (incluida la búsqueda del logo y rechazo de app desconocida), 14/14 tests Node, `typecheck` y build local. Demo real: Bitty vio el logo en `(1149, 1416)`, su cursor fue hasta él, hizo clic y Brave se abrió sin mover el ratón del usuario; el cursor volvió caminando y quedó aparcado detrás de la mascota.
 
 ## [2.5.0] - 2026-11-23
 
