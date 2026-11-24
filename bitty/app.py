@@ -27,6 +27,7 @@ from . import opencode, state
 from .bridge import Bridge
 from .cursor_view import BittyCursorView
 from .desktop_action import invoke_taskbar_button
+from .gaming import GamingShortcut
 from .icon_finder import find_icon
 from .screen import capture_to_png
 from .themes import THEMES, resolve_theme, theme_for_date, tint_sprite
@@ -147,6 +148,12 @@ class BittyWindow(QWidget):
         self.cursor_view.go_to(self.anchor.x() + 90, self.anchor.y() + 70)
         # El cursor solo aparece cuando Bitty tiene que actuar.
         self.cursor_view.park()
+
+        # Modo gaming: Bitty se oculta por completo y deja un atajo mínimo.
+        self.gaming = False
+        self.gaming_shortcut = GamingShortcut(self.theme)
+        self.gaming_shortcut.restore_requested.connect(self._gaming_restore)
+        self.gaming_shortcut.restore_quiet_requested.connect(self._exit_gaming)
 
         # El puente HTTP vive en un hilo: las órdenes se encolan y se aplican
         # desde el timer de Qt, que sí está en el hilo de la interfaz.
@@ -294,6 +301,11 @@ class BittyWindow(QWidget):
         self.bridge_action.triggered.connect(self._toggle_bridge)
         self.menu.addAction(self.bridge_action)
         self.menu.addSeparator()
+        self.gaming_action = QAction("> GAMING: ACTIVAR", self)
+        self.gaming_action.setCheckable(True)
+        self.gaming_action.triggered.connect(self._toggle_gaming)
+        self.menu.addAction(self.gaming_action)
+        self.menu.addSeparator()
         theme_menu = self.menu.addMenu("> TEMA")
         self.theme_actions = {}
         for key, item in [("auto", "AUTOMATICO"), *[(k, t.label) for k, t in THEMES.items()]]:
@@ -338,6 +350,10 @@ class BittyWindow(QWidget):
             self.hotkey_listener = None
 
     def _hotkey(self) -> None:
+        if self.gaming:
+            # El atajo de teclado también sirve para salir del modo gaming:
+            # no hace falta ir a la esquina con el ratón durante una partida.
+            self._exit_gaming()
         self.hotkey_pressed.emit()
 
     # ------------------------------------------------------------ sprites
@@ -765,6 +781,10 @@ class BittyWindow(QWidget):
     def _apply_bridge_queue(self) -> None:
         while self.bridge_queue:
             kind, payload = self.bridge_queue.pop(0)
+            # En gaming no se mueve nada en pantalla: ni el cursor ni el clic
+            # visual podrían interrumpir una partida. La visión sigue disponible.
+            if self.gaming and kind in ("cursor", "click"):
+                continue
             if kind == "cursor":
                 x, y = payload
                 self.cursor_view.go_to(x, y)
@@ -800,6 +820,45 @@ class BittyWindow(QWidget):
         self.data["bridge_enabled"] = checked
         self._save()
 
+    # ---------------------------------------------------------------- gaming
+    def _sync_gaming_action(self) -> None:
+        self.gaming_action.setText(
+            "> GAMING: DESACTIVAR" if self.gaming else "> GAMING: ACTIVAR"
+        )
+        self.gaming_action.setChecked(self.gaming)
+
+    def _toggle_gaming(self, checked: bool = False) -> None:
+        if self.gaming:
+            self._exit_gaming()
+        else:
+            self._enter_gaming()
+
+    def _enter_gaming(self) -> None:
+        """Oculta a Bitty y deja solo el atajo: nada estorba en la partida."""
+        if self.gaming:
+            return
+        self.close_bubble()
+        self.gaming = True
+        self.cursor_view.stop()
+        self.hide()
+        self.gaming_shortcut.set_theme(self.theme)
+        self.gaming_shortcut.show()
+        self.gaming_shortcut.raise_()
+        self._sync_gaming_action()
+
+    def _exit_gaming(self) -> None:
+        self.gaming_shortcut.hide()
+        self.gaming = False
+        self.show()
+        self.raise_()
+        self.cursor_view.park()
+        self._sync_gaming_action()
+
+    def _gaming_restore(self) -> None:
+        """Clic izquierdo en el atajo: volver y abrir el bocadillo."""
+        self._exit_gaming()
+        self.open_bubble()
+
     def _toggle_pause(self) -> None:
         self.roam_paused = not self.roam_paused
         self.pause_action.setText(self._pause_label())
@@ -811,6 +870,7 @@ class BittyWindow(QWidget):
     def _quit(self) -> None:
         self.stop_waiting()
         self.cursor_view.stop()
+        self.gaming_shortcut.hide()
         self.bridge.stop()
         self._save()
         if self.hotkey_listener:
@@ -827,6 +887,7 @@ class BittyWindow(QWidget):
         self.data["theme"] = key
         self.pixmap_cache.clear()
         self.cursor_view.set_theme(self.theme)
+        self.gaming_shortcut.set_theme(self.theme)
         self.apply_stylesheet()
         self._sync_theme_actions()
         self._save()
@@ -869,6 +930,9 @@ class BittyWindow(QWidget):
     def _roam(self) -> None:
         self.frame += 1
         self._apply_bridge_queue()
+        if self.gaming:
+            # Bitty está oculto: ni paseo ni guardado periódico de posición.
+            return
         if self.mode == "reaction" and _dt.datetime.now() > self.reaction_until:
             self.close_bubble()
         if self.mode != "input" and not self.dragging and not self.roam_paused:

@@ -333,14 +333,13 @@ class CursorSpriteTests(unittest.TestCase):
         self.assertEqual(len({len(row) for row in ARROW}), 1)
         used = {char for row in ARROW for char in row}
         self.assertTrue(used <= SPRITE_COLORS.keys())
-        self.assertTrue({"X", "f", "h", "s", "p", "k"} <= used)
+        self.assertTrue({"h", "o", "d", "k"} <= used)
 
         class FakeTheme:
             palette = {
                 "bg": (12, 12, 12),
                 "accent": (107, 143, 255),
                 "bright": (250, 250, 250),
-                "shade": (75, 75, 75),
                 "panel": (22, 22, 22),
                 "ink": (238, 238, 238),
             }
@@ -348,7 +347,8 @@ class CursorSpriteTests(unittest.TestCase):
         colors = colors_for(FakeTheme())
         self.assertNotIn(".", colors)
         self.assertEqual(colors["k"], (238, 238, 238))
-        self.assertEqual(colors["X"], (12, 12, 12))
+        self.assertEqual(colors["o"], (107, 143, 255))
+        self.assertEqual(colors["d"], (22, 22, 22))
 
 
 if __name__ == "__main__":

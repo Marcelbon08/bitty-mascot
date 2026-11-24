@@ -1,65 +1,63 @@
-"""Sprite del cursor propio de Bitty: un puntero con alma de terminal.
+"""Sprite del cursor propio de Bitty: un puntero neón de terminal.
 
 Decisión de diseño
 ------------------
-Se mantiene la silueta canónica del puntero de ratón (punta arriba a la
-izquierda, cuerpo diagonal y muesca inferior) para que se lea como cursor de
-inmediato, incluso a 32x32 px (16x16 a SCALE=2). Lo que lo hace «Bitty» es el
-tratamiento, no la forma:
+Se conserva la silueta canónica del puntero (punta arriba a la izquierda, cuerpo
+diagonal y muesca inferior) para que siga reconociéndose como ratón de un
+vistazo, incluso a 32x32 px (16x16 a SCALE=2). La personalidad Bitty/OpenCode
+viene del tratamiento, no de la forma:
 
-* ``X`` (bg) recorta el puntero con el mismo negro que la terminal de la
-  mascota, así que no parece un cursor de Windows sobre fondo claro.
-* ``f`` (accent) tiñe el cuerpo con el acento del tema (azul OpenCode, rojo en
-  Navidad, naranja en Halloween).
-* ``h`` (bright) y ``s`` (shade) forman un bisel de 1 px: luz arriba a la
-  izquierda, sombra abajo a la derecha. Es el mismo lenguaje de píxeles que
-  los sprites de la mascota.
-* En el centro, un mini prompt ``>`` (``k``) sobre una ventanita oscura
-  (``p``, panel) convierte el puntero en una línea de comandos en miniatura:
-  se reconoce como ratón, pero se siente como OpenCode.
+* ``h`` (bright) es el filo izquierdo: una línea luminosa continua que guía la
+  mirada hacia la punta y destaca incluso sobre fondos oscuros de videojuegos.
+* ``o`` (accent) dibuja el resto del contorno con el color del tema (azul
+  OpenCode, rojo en Navidad, naranja en Halloween). Es el "neón" del cursor.
+* ``d`` (panel) rellena el interior con el negro de la terminal, así que el
+  puntero parece una ventanita recortada y no un cursor genérico de Windows.
+* ``k`` (ink) traza un mini prompt ``>`` en la parte ancha: una pista de que
+  quien mueve este ratón es Bitty, no el usuario.
 
-Este módulo no importa Qt ni Pillow: ``colors_for()`` solo traduce caracteres
-a tuplas RGB de la paleta del tema para que el view las convierta a QColor.
+Frente al diseño anterior (cuerpo sólido del color de acento), aquí el acento
+va en el borde y el cuerpo es oscuro: cambia por completo el aspecto sin perder
+legibilidad ni la identidad del tema.
+
+Este módulo no importa Qt ni Pillow: ``colors_for()`` solo traduce caracteres a
+tuplas RGB de la paleta del tema para que el view las convierta a QColor.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-# Puntero de 16 x 16. X = marco, f = cuerpo, h = brillo, s = sombra,
-# p = panel del mini prompt, k = glifo del prompt.
+# Puntero de 16 x 16. h = filo, o = contorno, d = panel, k = prompt, . = vacío.
 ARROW = (
     "h...............",
-    "Xh..............",
-    "XhX.............",
-    "XhsX............",
-    "XhfsX...........",
-    "XhffsX..........",
-    "XhfffsX.........",
-    "XhfkppsX........",
-    "XhfpkpfsX.......",
-    "XhfkppffsX......",
-    "XhfffXfffsX.....",
-    "XhffX..XfffsX...",
-    "XhfX....XfffsX..",
-    "XhX......XfffsX.",
-    "XX........XfffsX",
-    "..........XXXXXX",
+    "ho..............",
+    "hdo.............",
+    "hddo............",
+    "hdddo...........",
+    "hddddo..........",
+    "hdkdddo.........",
+    "hddkdddo........",
+    "hdkdddddo.......",
+    "hddddddddo......",
+    "hddddoodddo.....",
+    "hdddo..odddoo...",
+    "hddo....oddddo..",
+    "hdo......oddddo.",
+    "ho........oddddo",
+    "..........oooooo",
 )
 
 # Punto = píxel transparente (no se pinta). Se declara aquí para que no quede
-# ningún carácter del sprite sin entrada, pero colors_for() lo omite a propósito
-# y así la ventana del cursor no dibuja un rectángulo oscuro alrededor.
+# ningún carácter del sprite sin entrada; colors_for() lo omite a propósito.
 TRANSPARENT = "."
 
 # Cada carácter del sprite apunta a una clave real de themes.ORIGINAL_PALETTE.
 SPRITE_COLORS = {
     ".": "bg",
-    "X": "bg",
-    "f": "accent",
     "h": "bright",
-    "s": "shade",
-    "p": "panel",
+    "o": "accent",
+    "d": "panel",
     "k": "ink",
 }
 

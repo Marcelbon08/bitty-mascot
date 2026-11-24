@@ -85,6 +85,11 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
 
+## Próxima actualización
+
+- **Modo gaming para no jorobar partidas**: en el menú del clic derecho aparece `> GAMING: ACTIVAR`. Al activarlo Bitty y su cursor se ocultan por completo (ideal para Steam, Hydra, Epic Games o cualquier juego), pero queda un **atajo flotante de 48×48** en la esquina superior izquierda: **clic izquierdo** devuelve a Bitty y abre su bocadillo, **clic derecho** solo lo devuelve, y se puede arrastrar a otra esquina. `Ctrl+Alt+B` también lo recupera. Mientras estás en gaming, el puente ignora `bitty_cursor` y `bitty_click` para que nada se mueva en pantalla; `bitty_screen` sigue funcionando si lo pides.
+- **Cursor rediseñado**: ahora lleva un filo izquierdo brillante, un contorno neón con el color del tema, el interior oscuro de la terminal y un mini prompt `>`. Es más visible sobre fondos de juego y sigue cambiando con los temas OPENCODE, NAVIDAD y HALLOWEEN.
+
 ## Novedades de v2.5.0
 
 - **Bitty y OpenCode comparten el cursor**: el plugin registra `bitty_cursor`, `bitty_click` y `bitty_screen`. OpenCode puede pedirle a Bitty que saque su cursor, haga **su propio clic visual** y abra una app de su lista cerrada (`brave`). Con `open: "brave"`, Bitty mira la pantalla, localiza el logo en la barra de tareas y hace clic ahí; tu ratón no se mueve ni se escriben teclas.
@@ -96,7 +101,7 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 ## Novedades de v2.4.7
 
 - **Cursor virtual de Bitty** (mejora 12): hay un segundo puntero pixelado además del tuyo. Recibe coordenadas y se desplaza hacia ellas interpolando un paso cada 20 ms, con desaceleración suave, hasta llegar. Se ve fluido y es multimonitor.
-- **No mueve tu ratón**: el cursor de Bitty está **aparcado detrás de la mascota**, con estética de terminal OpenCode (puntero de 16×16 con marco oscuro, acento del tema, bisel y un mini prompt `>`). Sale cuando Bitty va a actuar y, en lugar de desaparecer, hace una pausa tras el clic, **vuelve en un arco suave y se atenúa al meterse bajo el sprite**, donde queda tapado pero vivo. Su ventana es transparente a los clics (`click-through`): el gesto es visible pero no llega al escritorio, no escribe teclas y no mueve tu puntero.
+- **No mueve tu ratón**: el cursor de Bitty está **aparcado detrás de la mascota**, con estética de terminal OpenCode (puntero de 16×16 con filo brillante, contorno neón, interior oscuro y un mini prompt `>`). Sale cuando Bitty va a actuar y, en lugar de desaparecer, hace una pausa tras el clic, **vuelve en un arco suave y se atenúa al meterse bajo el sprite**, donde queda tapado pero vivo. Su ventana es transparente a los clics (`click-through`): el gesto es visible pero no llega al escritorio, no escribe teclas y no mueve tu puntero.
 - **Cómo mandarlo**: escribe `/cursor 500,300` (o `/cursor 500 300`) en el bocadillo; `/click 500,300 brave` hace que Bitty saque su cursor, mire el logo y abra Brave; `/cursor demo` activa una ruta aleatoria cerca de la mascota y `/cursor para` la detiene. Desde OpenCode se pide con `bitty_cursor`, `bitty_click` o `bitty_screen`. También hay entradas en el menú derecho: **> CURSOR: RUTA ALEATORIA**, **> CURSOR: IR AL CENTRO** y **> CURSOR: OCULTAR/MOSTRAR**.
 - Sigue siendo una sugerencia visual: señala, no actúa. Para editar archivos o pulsar botones reales, OpenCode ya tiene sus propias herramientas y permisos.
 

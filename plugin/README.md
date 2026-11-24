@@ -86,6 +86,8 @@ El plugin registra dos herramientas en el servidor de OpenCode:
 | `bitty_click` | Saca el cursor de Bitty (aparcado tras él, puntero terminal 16×16 con mini prompt), captura la pantalla, encuentra el logo de Brave en la barra de tareas, hace su clic visual sobre él y activa la app desde una **whitelist** cerrada. Nunca mueve tu ratón real ni pulsa teclas; después el cursor hace una pausa, **vuelve en arco suave, se atenúa y se mete detrás de Bitty**. | Diálogo nativo **cada vez** (`bitty.click`), sin `save` |
 | `bitty_screen` | Captura todas las pantallas y devuelve el PNG como **data-URL inline** (`data:image/png;base64,...`) para que el modelo vea el escritorio real. Requiere un modelo con visión. | Diálogo nativo **cada vez** (`bitty.screen`), sin `save` |
 
+Si Bitty está en **modo gaming** (`> GAMING: ACTIVAR` en su menú), `bitty_cursor` y `bitty_click` se ignoran para no dibujar nada sobre la partida; `bitty_screen` sigue disponible.
+
 Cómo funciona el puente:
 
 1. Bitty abre un servidor HTTP **solo en `127.0.0.1`**, con un puerto efímero y un token aleatorio de 43 caracteres.
