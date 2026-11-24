@@ -6,6 +6,21 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.5.3] - 2026-11-24 - acuerdo breve antes de usar visión o cursor
+
+### Añadido
+- **Acuerdo de Bitty en 4 líneas** (`bitty/agreement.py`, `bitty/agreement_dialog.py`): se muestra antes de `bitty_screen`, `bitty_cursor` y `bitty_click`. El botón `ACEPTO` permanece desactivado 6 s para leerlo sin saltarlo; `RECHAZAR` corta la acción. La versión aceptada se guarda en `state.json` y se puede volver a abrir con `> ACUERDO: LEER`.
+- **Endpoint `/agreement` en el puente**: el plugin lo llama antes de `permission.assert`, por lo que el orden es acuerdo → permiso nativo → acción. Un rechazo devuelve HTTP 403 y no pide permiso ni captura.
+- **Puerta de seguridad en el puente**: `/cursor`, `/click` y `/capture` devuelven 403 si el acuerdo no está aceptado, aunque se llamen directamente.
+
+### Corregido
+- **CI headless**: los tests que importan `bitty.app` fallaban en Ubuntu por falta de `libEGL.so.1`. El workflow instala `libegl1` y fija `QT_QPA_PLATFORM=offscreen` (el CI de v2.5.2 se quedó sin release por esto).
+
+### Verificado
+- 24/24 tests Python y 15 tests Node con `typecheck` en verde; build local y `.exe` desplegado con el diálogo visible; rechazo del acuerdo comprobado de extremo a extremo (HTTP 403, sin permiso ni captura).
+
+---
+
 ## [2.5.2] - 2026-11-24 - compatibilidad macOS/Linux
 
 ### Añadido

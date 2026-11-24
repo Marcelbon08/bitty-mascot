@@ -57,13 +57,13 @@ export async function readConnection(): Promise<BridgeConnection | null> {
 }
 
 /** URL completa, aislada para poder comprobarla en tests. */
-export function bridgeUrl(connection: BridgeConnection, path: "/ping" | "/cursor" | "/click" | "/capture"): string {
+export function bridgeUrl(connection: BridgeConnection, path: "/ping" | "/agreement" | "/cursor" | "/click" | "/capture"): string {
   return `http://127.0.0.1:${connection.port}${path}`
 }
 
 /** Llama al puente. Lanza un error claro si Bitty no está o rechaza la petición. */
 export async function callBridge<T>(
-  path: "/cursor" | "/click" | "/capture",
+  path: "/agreement" | "/cursor" | "/click" | "/capture",
   body: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<T> {

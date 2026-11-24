@@ -23,6 +23,11 @@ from . import state
 MAX_BODY = 65536
 MAX_COORD = 100000
 KEEP_CAPTURES = 6
+
+
+class AgreementRequired(Exception):
+    """El usuario leyó el acuerdo pero no lo aceptó."""
+
 # Únicas apps que el clic virtual de Bitty puede abrir. Nunca se acepta una
 # orden arbitraria: si no está aquí, se rechaza.
 ALLOWED_OPEN = frozenset({"brave"})
@@ -36,10 +41,12 @@ class Bridge:
         on_cursor: Callable[[int, int], None],
         on_capture: Callable[[Callable[[], None]], None] | None = None,
         on_click: Callable[[int, int, str], None] | None = None,
+        on_agreement: Callable[[Callable[[bool], None]], None] | None = None,
     ) -> None:
         self.on_cursor = on_cursor
         self.on_capture = on_capture
         self.on_click = on_click
+        self.on_agreement = on_agreement
         self.token = secrets.token_urlsafe(32)
         self.port = 0
         self.server: ThreadingHTTPServer | None = None
@@ -94,6 +101,17 @@ class Bridge:
                     self._reply(400, {"error": "json invalido"})
                     return
 
+                if self.path == "/agreement":
+                    try:
+                        accepted = bridge.agreement()
+                    except AgreementRequired as exc:
+                        self._reply(403, {"error": str(exc), "code": "agreement_required"})
+                    except Exception as exc:
+                        self._reply(500, {"error": str(exc)[:200]})
+                    else:
+                        self._reply(200, {"ok": True, "agreement": accepted})
+                    return
+
                 if self.path == "/cursor":
                     x, y = body.get("x"), body.get("y")
                     if (
@@ -103,7 +121,12 @@ class Bridge:
                     ):
                         self._reply(400, {"error": "coordenadas invalidas"})
                         return
-                    bridge.on_cursor(x, y)
+                    if bridge.on_cursor(x, y) is False:
+                        self._reply(403, {
+                            "error": "acuerdo pendiente: lee y acepta en Bitty",
+                            "code": "agreement_required",
+                        })
+                        return
                     self._reply(200, {"ok": True, "x": x, "y": y})
                     return
 
@@ -122,17 +145,27 @@ class Bridge:
                     ):
                         self._reply(400, {"error": "aplicacion no permitida"})
                         return
-                    if bridge.on_click:
-                        bridge.on_click(x, y, open_app or "")
+                    if bridge.on_click and bridge.on_click(x, y, open_app or "") is False:
+                        self._reply(403, {
+                            "error": "acuerdo pendiente: lee y acepta en Bitty",
+                            "code": "agreement_required",
+                        })
+                        return
                     self._reply(200, {"ok": True, "x": x, "y": y, "click": True})
                     return
 
                 if self.path == "/capture":
                     if bridge.on_capture:
                         try:
-                            bridge.on_capture()
+                            allowed = bridge.on_capture()
                         except Exception:
-                            pass
+                            allowed = None
+                        if allowed is False:
+                            self._reply(403, {
+                                "error": "acuerdo pendiente: lee y acepta en Bitty",
+                                "code": "agreement_required",
+                            })
+                            return
                     try:
                         self._reply(200, bridge.capture())
                     except Exception as exc:
@@ -182,6 +215,25 @@ class Bridge:
             path.chmod(0o600)
         except OSError:
             pass
+
+    def agreement(self) -> bool:
+        """Pide a Bitty que muestre el acuerdo y espera a la respuesta."""
+        done = threading.Event()
+        box: dict = {}
+
+        def work(accepted: bool) -> None:
+            box["accepted"] = bool(accepted)
+            done.set()
+
+        if self.on_agreement:
+            self.on_agreement(work)
+        else:
+            work(True)
+        if not done.wait(timeout=30):
+            raise RuntimeError("Bitty no respondió al acuerdo.")
+        if not box["accepted"]:
+            raise AgreementRequired("Acuerdo rechazado en Bitty: no he mirado ni actuado.")
+        return True
 
     def capture(self) -> dict:
         """Pide una captura al hilo de Qt y espera a que esté lista.

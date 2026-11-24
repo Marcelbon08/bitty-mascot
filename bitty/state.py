@@ -34,6 +34,7 @@ DEFAULT = {
     "theme": "auto",
     "cursor_style": "clasico",
     "bridge_enabled": True,
+    "agreement_version": 0,
 }
 
 
@@ -53,6 +54,10 @@ def load() -> dict:
         data["session_mode"] = "new"
     if data.get("cursor_style") not in SPRITES:
         data["cursor_style"] = "clasico"
+    version = data.get("agreement_version")
+    data["agreement_version"] = (
+        version if not isinstance(version, bool) and version in (0, 1) else 0
+    )
 
     # Un state.json manipulado no debe poder introducir valores raros en la
     # interfaz ni en los argumentos del ejecutable de OpenCode.

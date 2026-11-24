@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.5.2
+> **Windows · macOS · Linux · Fedora** · v2.5.3
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,14 +22,14 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.5.2 |
+| Sistema | Descarga directa v2.5.3 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.2/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.2/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.2/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.2/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.3/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.3/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.3/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.3/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.5.2](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.2)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.5.3](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.3)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI.
 
@@ -84,6 +84,11 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.5.3
+
+- **Acuerdo breve antes de mirar o actuar**: la primera vez que OpenCode pide `bitty_screen`, `bitty_cursor` o `bitty_click`, Bitty muestra un diálogo de **4 líneas** con el botón `ACEPTO` bloqueado 6 segundos para que se lea sin saltarlo. Rechazarlo corta la acción antes del permiso nativo, sin capturar ni conectar nada. Se puede volver a leer en `> ACUERDO: LEER`.
+- **Orden correcto**: acuerdo de Bitty → permiso nativo de OpenCode (siempre `ask`, nunca «permitir siempre») → acción. El permiso sigue preguntándose cada vez y lo que rechaces no guarda nada.
 
 ## Novedades de v2.5.2
 

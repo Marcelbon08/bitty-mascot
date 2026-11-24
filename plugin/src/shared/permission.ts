@@ -20,16 +20,16 @@ export function forceAsk(event: PermissionEvent): void {
   }
   if (event.action === CURSOR_ACTION) {
     event.effect = "ask"
-    event.message = "Bitty quiere mover su cursor virtual a unas coordenadas. No moverá tu ratón ni hará clics."
+    event.message = "Acuerdo leído en Bitty: permiso para mover su cursor virtual. No moverá tu ratón ni hará clics."
     return
   }
   if (event.action === CLICK_ACTION) {
     event.effect = "ask"
-    event.message = "Bitty quiere mover su cursor virtual, hacer clic y abrir una app de su lista permitida. Tu ratón real no se moverá."
+    event.message = "Acuerdo leído en Bitty: permiso para su clic virtual y abrir una app de su lista. Tu ratón real no se moverá."
     return
   }
   if (event.action === SCREEN_ACTION) {
     event.effect = "ask"
-    event.message = "Bitty quiere capturar tu pantalla para que OpenCode la vea. Revisa qué hay visible antes de aceptar."
+    event.message = "Acuerdo leído en Bitty: permiso para capturar tu pantalla ahora. Revisa qué hay visible antes de aceptar."
   }
 }

@@ -375,6 +375,58 @@ class CursorSpriteTests(unittest.TestCase):
         self.assertEqual(colors["w"], (250, 250, 250))
 
 
+class AgreementTests(unittest.TestCase):
+    def test_agreement_is_short_and_persisted(self) -> None:
+        from bitty import agreement, state
+
+        self.assertEqual(len(agreement.AGREEMENT_LINES), 4)
+        self.assertTrue(all(len(line) < 110 for line in agreement.AGREEMENT_LINES))
+        self.assertFalse(agreement.is_accepted({}))
+        self.assertTrue(agreement.is_accepted({"agreement_version": 1}))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.json"
+            with mock.patch.object(state, "STATE_PATH", path):
+                self.assertEqual(state.load()["agreement_version"], 0)
+                state.save({"agreement_version": 1})
+                self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["agreement_version"], 1)
+                self.assertEqual(state.load()["agreement_version"], 1)
+
+    def test_bridge_agreement_endpoint_gates_before_any_action(self) -> None:
+        import http.client
+
+        from bitty import bridge
+
+        with tempfile.TemporaryDirectory() as tmp:
+            accepted = [False]
+            with mock.patch.object(bridge.state, "config_dir", return_value=Path(tmp)):
+                server = bridge.Bridge(
+                    lambda x, y: None,
+                    on_agreement=lambda work: work(accepted[0]),
+                )
+                server.start()
+                try:
+                    config = json.loads((Path(tmp) / "bridge.json").read_text(encoding="utf-8"))
+                    auth = {
+                        "Content-Type": "application/json",
+                        "X-Bitty-Token": config["token"],
+                    }
+                    client = http.client.HTTPConnection("127.0.0.1", server.port, timeout=5)
+                    client.request("POST", "/agreement", "{}", auth)
+                    response = client.getresponse()
+                    payload = json.loads(response.read())
+                    self.assertEqual(response.status, 403)
+                    self.assertEqual(payload["code"], "agreement_required")
+
+                    accepted[0] = True
+                    client.request("POST", "/agreement", "{}", auth)
+                    response = client.getresponse()
+                    self.assertTrue(json.loads(response.read())["agreement"])
+                    client.close()
+                finally:
+                    server.stop()
+
+
 class CrossPlatformTests(unittest.TestCase):
     def test_cursor_z_order_uses_qt_outside_windows(self) -> None:
         from bitty import cursor_view

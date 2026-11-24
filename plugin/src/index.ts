@@ -7,6 +7,12 @@ import {
 } from "./shared/permission"
 import { BittyRpc } from "./shared/rpc"
 
+// Antes del permiso nativo: Bitty muestra el acuerdo corto y solo sigue si se
+// acepta. Rechazarlo corta la acción sin llegar a pedir permiso ni a mirar.
+async function ensureAgreement(signal?: AbortSignal): Promise<void> {
+  await callBridge("/agreement", {}, signal)
+}
+
 export default Plugin.define({
   id: "bitty",
   async setup(ctx) {
@@ -47,6 +53,7 @@ export default Plugin.define({
         options: { namespace: "bitty", codemode: true },
         execute: async (raw, context) => {
           const input = raw as { x: number, y: number }
+          await ensureAgreement(context.signal)
           await ctx.permission.assert({
             sessionID: context.sessionID,
             agent: context.agent,
@@ -76,6 +83,7 @@ export default Plugin.define({
         options: { namespace: "bitty", codemode: true },
         execute: async (raw, context) => {
           const input = raw as { x: number, y: number, open?: "brave" }
+          await ensureAgreement(context.signal)
           await ctx.permission.assert({
             sessionID: context.sessionID,
             agent: context.agent,
@@ -103,6 +111,7 @@ export default Plugin.define({
         },
         options: { namespace: "bitty", codemode: true },
         execute: async (_input, context) => {
+          await ensureAgreement(context.signal)
           await ctx.permission.assert({
             sessionID: context.sessionID,
             agent: context.agent,

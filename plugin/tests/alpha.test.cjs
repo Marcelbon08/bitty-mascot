@@ -269,6 +269,16 @@ async function main() {
     assert.equal(validateConnection(null), null)
   })
 
+  check("acuerdo_antes_de_cada_permiso", () => {
+    const source = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8")
+    const firstAgreement = source.indexOf("await ensureAgreement(")
+    const firstAssert = source.indexOf("await ctx.permission.assert(")
+    assert.ok(firstAgreement > 0, "falta el acuerdo previo")
+    assert.ok(firstAssert > firstAgreement, "el permiso nativo no puede ir antes del acuerdo")
+    assert.equal((source.match(/await ensureAgreement\(/g) || []).length, 3)
+    assert.match(source, /"\/agreement"/)
+  })
+
   await checkAsync("puente_lee_bridge_json", async () => {
     const tmp = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "bitty-bridge-"))
     const previousAppData = process.env.APPDATA

@@ -19,11 +19,13 @@ from PySide6.QtGui import (
     QPainter, QPen, QPixmap, QShortcut,
 )
 from PySide6.QtWidgets import (
-    QApplication, QComboBox, QLineEdit, QMenu, QPlainTextEdit,
+    QApplication, QComboBox, QDialog, QLineEdit, QMenu, QPlainTextEdit,
     QPushButton, QToolTip, QWidget,
 )
 
 from . import opencode, state
+from .agreement import AGREEMENT_VERSION, is_accepted
+from .agreement_dialog import AgreementDialog
 from .bridge import Bridge
 from .cursor_sprite import SPRITES as CURSOR_STYLES, STYLE_LABELS
 from .cursor_view import BittyCursorView
@@ -172,7 +174,11 @@ class BittyWindow(QWidget):
         # El puente HTTP vive en un hilo: las órdenes se encolan y se aplican
         # desde el timer de Qt, que sí está en el hilo de la interfaz.
         self.bridge_queue: list[tuple[str, tuple]] = []
-        self.bridge = Bridge(self._queue_cursor, self._queue_capture, self._queue_click)
+        self._agreement_pending = False
+        self.bridge = Bridge(
+            self._queue_cursor, self._queue_capture, self._queue_click,
+            on_agreement=self._queue_agreement,
+        )
         self.bridge_action.setChecked(bool(self.data.get("bridge_enabled", True)))
         if self.bridge_action.isChecked():
             try:
@@ -318,6 +324,7 @@ class BittyWindow(QWidget):
             style_menu.addAction(act)
             self.style_actions[key] = act
         self._sync_style_actions()
+        self.menu.addAction("> ACUERDO: LEER", self._reread_agreement)
         self.menu.addSeparator()
         self.bridge_action = QAction("> PUENTE OPENCODE: DESACTIVAR", self)
         self.bridge_action.setCheckable(True)
@@ -737,15 +744,56 @@ class BittyWindow(QWidget):
     def _cursor_center(self) -> None:
         self.cursor_view.center()
 
+    # ------------------------------------------------------------- acuerdo
+    def _ask_agreement(self, force: bool = False) -> bool:
+        """Muestra el acuerdo corto. El botón ACEPTO se retrasa para leerlo."""
+        if not force and is_accepted(self.data):
+            return True
+        dialog = AgreementDialog(self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            self._cursor_notice("ACUERDO RECHAZADO: no he mirado ni actuado")
+            return False
+        self.data["agreement_version"] = AGREEMENT_VERSION
+        self._save()
+        self._cursor_notice("ACUERDO ACEPTADO — repite la acción si la rechacé")
+        return True
+
+    def _reread_agreement(self) -> None:
+        self._ask_agreement(force=True)
+
+    def _gate_action(self) -> bool:
+        """Devuelve False y pide leer el acuerdo antes de mirar o actuar."""
+        if is_accepted(self.data):
+            return True
+        if not self._agreement_pending:
+            self._agreement_pending = True
+            self.bridge_queue.append(("agreement", ()))
+        return False
+
     # ------------------------------------------------------- puente local
-    def _queue_cursor(self, x: int, y: int) -> None:
+    def _queue_cursor(self, x: int, y: int) -> bool:
+        if not self._gate_action():
+            return False
         self.bridge_queue.append(("cursor", (x, y)))
+        return True
 
-    def _queue_capture(self, work: Callable[[], None]) -> None:
+    def _queue_capture(self, work: Callable[[], None]) -> bool:
+        if not self._gate_action():
+            return False
         self.bridge_queue.append(("capture", (work,)))
+        return True
 
-    def _queue_click(self, x: int, y: int, open_app: str) -> None:
+    def _queue_click(self, x: int, y: int, open_app: str) -> bool:
+        if not self._gate_action():
+            return False
         self.bridge_queue.append(("click", (x, y, open_app)))
+        return True
+
+    def _queue_agreement(self, work: Callable[[bool], None]) -> None:
+        if is_accepted(self.data):
+            work(True)
+            return
+        self.bridge_queue.append(("agreement", (work,)))
 
     @staticmethod
     def _open_app(name: str) -> bool:
@@ -768,6 +816,8 @@ class BittyWindow(QWidget):
         de tareas se hace en el mismo instante por UI Automation, y solo para
         apps de la whitelist.
         """
+        if not self._ask_agreement():
+            return
         target = (x, y)
         seen = "CLIC VISUAL"
         if open_app:
@@ -815,6 +865,11 @@ class BittyWindow(QWidget):
             # En gaming no se mueve nada en pantalla: ni el cursor ni el clic
             # visual podrían interrumpir una partida. La visión sigue disponible.
             if self.gaming and kind in ("cursor", "click"):
+                continue
+            if kind == "agreement":
+                self._agreement_pending = False
+                work = payload[0]
+                work(self._ask_agreement())
                 continue
             if kind == "cursor":
                 x, y = payload
@@ -1006,6 +1061,7 @@ class BittyWindow(QWidget):
             "session_id": self.data.get("session_id", ""),
             "theme": self.theme_key,
             "cursor_style": self.cursor_style,
+            "agreement_version": self.data.get("agreement_version", 0),
         })
         state.save(self.data)
 
