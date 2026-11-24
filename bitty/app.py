@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import random
-import shutil
 import subprocess
 import sys
 import threading
@@ -16,14 +15,15 @@ from PIL import Image
 from PySide6.QtCore import Qt, QEvent, QPoint, QRect, QSize, QTimer, Signal
 from PySide6.QtGui import (
     QAction, QColor, QCursor, QFont, QGuiApplication, QImage, QKeySequence,
-    QPainter, QPen, QPixmap, QShortcut,
+    QPainter, QPen, QPixmap, QPolygon, QShortcut,
 )
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QLineEdit, QMenu, QPlainTextEdit,
     QPushButton, QToolTip, QWidget,
 )
 
-from . import opencode, state
+from . import apps, opencode, state
+from .apps import OPEN_APPS
 from .agreement import AGREEMENT_VERSION, is_accepted
 from .agreement_dialog import AgreementDialog
 from .bridge import Bridge
@@ -42,19 +42,6 @@ if getattr(sys, "frozen", False):
 else:
     RESOURCES = Path(__file__).resolve().parent / "resources"
 SPRITES = RESOURCES / "sprites"
-
-# Lista cerrada: el clic virtual solo puede abrir estas apps, nunca un comando
-# que venga de fuera. Se busca en las rutas típicas y en el PATH.
-OPEN_APPS = {
-    "brave": (
-        r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
-        r"C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\brave.exe",
-        str(Path.home() / "AppData" / "Local" / "BraveSoftware" / "Brave-Browser" / "Application" / "brave.exe"),
-        "/usr/bin/brave-browser",
-        "/usr/bin/brave",
-        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
-    ),
-}
 
 EXPRESSIONS = {
     "idleA": "bitty-neutral.png", "idleB": "bitty-blink.png",
@@ -75,6 +62,26 @@ WAIT_FACES = ["thinking", "curious", "thinking", "doubt", "thinking", "sleepy"]
 IDLE_SIZE = QSize(84, 84)
 INPUT_SIZE = QSize(340, 300)
 REPLY_SIZE = QSize(340, 322)
+BUBBLE_WIDTH = 340
+# Si el bocadillo tiene que abrirse hacia abajo, el panel baja 84 px y la
+# ventana crece 44 px para dejar sitio a los botones.
+FLIPPED_PANEL_SHIFT = 84
+FLIPPED_EXTRA_HEIGHT = 44
+SPRITE_EDGE = 42
+
+# Geometría base de los controles del bocadillo; se desplaza sola cuando el
+# panel se abre hacia abajo para que Bitty no tenga que moverse.
+BUBBLE_WIDGETS = {
+    "session_combo": (22, 27, 152, 24),
+    "new_btn": (180, 27, 60, 24),
+    "input_box": (22, 56, 180, 28),
+    "reply_view": (16, 90, 304, 112),
+    "send_btn": (210, 56, 62, 28),
+    "follow_btn": (22, 222, 62, 28),
+    "open_app_btn": (88, 222, 88, 28),
+    "copy_btn": (210, 222, 62, 28),
+    "cancel_btn": (210, 222, 62, 28),
+}
 
 
 def _rgb(color: tuple[int, int, int]) -> QColor:
@@ -126,6 +133,11 @@ class BittyWindow(QWidget):
         self.drag_offset = QPoint()
         self.moved = False
         self.frame = 0
+        self.sprite_off = QPoint(42, 42)
+        self.panel_shift = 0
+        self.height_base = IDLE_SIZE.height()
+        self.flip_x = False
+        self.flip_y = False
         self.idle_face_index = 0
         self.wait_face_index = 0
         self.sprite_override: str | None = None
@@ -451,22 +463,42 @@ class BittyWindow(QWidget):
             text_w = p.fontMetrics().horizontalAdvance("BITTY")
             p.drawText((84 - text_w) // 2, 81, "BITTY")
         else:
-            rect = QRect(12, 6, 316, 200)
-            p.fillRect(rect, col("panel"))
+            panel = QRect(12, 6 + self.panel_shift, 316, 200)
+            header_y = 6 + self.panel_shift
+            p.fillRect(panel, col("panel"))
             p.setPen(QPen(col("border"), 1))
-            p.drawRect(rect)
-            p.fillRect(QRect(12, 6, 316, 20), col("subtle"))
-            p.drawLine(15, 26, 325, 26)
+            p.drawRect(panel)
+            p.fillRect(QRect(12, header_y, 316, 20), col("subtle"))
+            p.drawLine(15, header_y + 20, 325, header_y + 20)
             p.setPen(col("bright"))
             p.setFont(QFont("Consolas", 9, QFont.Weight.Bold))
-            p.drawText(18, 20, f"> {self.theme.label} / OPENCODE")
-            p.setPen(col("accent"))
-            p.drawRect(QRect(12, 200, 10, 8))
+            p.drawText(18, header_y + 14, f"> {self.theme.label} / OPENCODE")
+            self._draw_tail(p, panel, self.sprite_off, col("accent"))
 
             sprite = self.pixmap(self.current_face())
-            y = 284 if self.mode == "reaction" else 262
-            p.drawPixmap(40 - sprite.width() // 2, y - sprite.height() // 2, sprite)
+            p.drawPixmap(
+                self.sprite_off.x() - sprite.width() // 2,
+                self.sprite_off.y() - sprite.height() // 2,
+                sprite,
+            )
         p.end()
+
+    @staticmethod
+    def _draw_tail(p: QPainter, panel: QRect, sprite: QPoint, color: QColor) -> None:
+        """Cola triangular del bocadillo, hacia el lado donde está Bitty."""
+        sx, sy = sprite.x(), sprite.y()
+        if sy >= panel.bottom():
+            points = [(sx - 11, panel.bottom()), (sx + 11, panel.bottom()), (sx, panel.bottom() + 20)]
+        elif sy <= panel.top():
+            points = [(sx - 11, panel.top()), (sx + 11, panel.top()), (sx, panel.top() - 20)]
+        elif sx >= panel.right():
+            points = [(panel.right(), sy - 11), (panel.right(), sy + 11), (panel.right() + 20, sy)]
+        else:
+            points = [(panel.left(), sy - 11), (panel.left(), sy + 11), (panel.left() - 20, sy)]
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(color)
+        p.drawPolygon(QPolygon([QPoint(x, y) for x, y in points]))
+        p.setBrush(Qt.BrushStyle.NoBrush)
 
     # --------------------------------------------------------------- mode
     def set_mode(self, mode: str, reaction: str = "normal", text: str = "") -> None:
@@ -474,6 +506,11 @@ class BittyWindow(QWidget):
         self.mode = mode
         self.reaction = reaction
         self.bubble_text = text
+        self.height_base = (
+            IDLE_SIZE.height() if mode == "idle"
+            else REPLY_SIZE.height() if mode == "reaction"
+            else INPUT_SIZE.height()
+        )
         if mode == "idle":
             self.resize(IDLE_SIZE)
         elif mode == "reaction":
@@ -493,9 +530,6 @@ class BittyWindow(QWidget):
         self.new_btn.setVisible(is_input)
         self.send_btn.setVisible(is_input)
         self.exit_btn.setVisible(mode != "idle")
-        self.exit_btn.setGeometry(
-            QRect(278, 56, 44, 28) if is_input else QRect(278, 222, 44, 28)
-        )
         self._update_buttons()
         self._update_location()
         self.update()
@@ -801,15 +835,7 @@ class BittyWindow(QWidget):
     @staticmethod
     def _open_app(name: str) -> bool:
         """Abre solo una app de la whitelist, sin ejecutar comandos arbitrarios."""
-        candidates = OPEN_APPS.get(name)
-        if not candidates:
-            return False
-        for candidate in (*candidates, name):
-            path = candidate if Path(candidate).is_file() else shutil.which(candidate)
-            if path:
-                subprocess.Popen([path], shell=False)
-                return True
-        return False
+        return apps.open_app(name)
 
     def _bitty_click(self, x: int, y: int, open_app: str = "") -> None:
         """Bitty ve el logo, saca su cursor, hace clic y activa la app.
@@ -1005,8 +1031,25 @@ class BittyWindow(QWidget):
             action.setChecked(key == self.cursor_style)
 
     # ------------------------------------------------------------ movement
+    def _apply_bubble_layout(self) -> None:
+        """Coloca los controles según el lado en que se abrió el bocadillo."""
+        if self.mode == "idle":
+            return
+        dy = self.panel_shift
+        for name, (x, y, w, h) in BUBBLE_WIDGETS.items():
+            widget = getattr(self, name)
+            geometry = QRect(x, y + dy, w, h)
+            if widget.geometry() != geometry:
+                widget.setGeometry(geometry)
+        exit_y = 56 if self.mode == "input" else 222
+        self.exit_btn.setGeometry(QRect(278, exit_y + dy, 44, 28))
+        wanted = QSize(
+            BUBBLE_WIDTH, self.height_base + (FLIPPED_EXTRA_HEIGHT if self.flip_y else 0)
+        )
+        if self.size() != wanted:
+            self.resize(wanted)
+
     def _update_location(self) -> None:
-        off_x, off_y = (42, 42) if self.mode == "idle" else (40, self._sprite_y())
         screens = QGuiApplication.screens()
         if screens:
             rect = screens[0].geometry()
@@ -1014,11 +1057,54 @@ class BittyWindow(QWidget):
                 rect = rect.united(s.geometry())
         else:
             rect = QGuiApplication.primaryScreen().geometry()
-        x = self.anchor.x() - off_x
-        y = self.anchor.y() - off_y
-        x = max(rect.left(), min(x, rect.right() - self.width()))
-        y = max(rect.top(), min(y, rect.bottom() - self.height()))
-        self.anchor = QPoint(x + off_x, y + off_y)
+
+        if self.mode == "idle":
+            self.flip_x = self.flip_y = False
+            self.panel_shift = 0
+            self.sprite_off = QPoint(42, 42)
+            x = self.anchor.x() - 42
+            y = self.anchor.y() - 42
+            clamped_x = max(rect.left(), min(x, rect.right() - IDLE_SIZE.width()))
+            clamped_y = max(rect.top(), min(y, rect.bottom() - IDLE_SIZE.height()))
+            if (clamped_x, clamped_y) != (x, y):
+                self.anchor = QPoint(clamped_x + 42, clamped_y + 42)
+            x, y = clamped_x, clamped_y
+        else:
+            base_y = 284 if self.mode == "reaction" else 262
+            # Probamos las cuatro esquinas. El objetivo es que Bitty siga en
+            # su ancla: se mueve el bocadillo, no la mascota.
+            chosen = None
+            for flip_x in (False, True):
+                for flip_y in (False, True):
+                    off_x = BUBBLE_WIDTH - 40 if flip_x else 40
+                    off_y = SPRITE_EDGE if flip_y else base_y
+                    height = self.height_base + (FLIPPED_EXTRA_HEIGHT if flip_y else 0)
+                    wx = self.anchor.x() - off_x
+                    wy = self.anchor.y() - off_y
+                    if (
+                        wx >= rect.left() and wy >= rect.top()
+                        and wx + BUBBLE_WIDTH <= rect.right()
+                        and wy + height <= rect.bottom()
+                    ):
+                        chosen = (flip_x, flip_y, off_x, off_y, height, wx, wy)
+                        break
+                if chosen:
+                    break
+            if chosen is None:
+                # Pantalla demasiado pequeña: se recorta, pero sin reescribir
+                # el ancla para que Bitty no salte.
+                chosen = (
+                    False, False, 40, base_y, self.height_base,
+                    max(rect.left(), min(self.anchor.x() - 40, rect.right() - BUBBLE_WIDTH)),
+                    max(rect.top(), min(self.anchor.y() - base_y,
+                                        rect.bottom() - self.height_base)),
+                )
+            self.flip_x, self.flip_y = chosen[0], chosen[1]
+            self.sprite_off = QPoint(chosen[2], chosen[3])
+            self.panel_shift = FLIPPED_PANEL_SHIFT if self.flip_y else 0
+            self._apply_bubble_layout()
+            x, y = chosen[5], chosen[6]
+
         self.cursor_view.set_home(self.anchor)
         # Si está aparcado, sigue a Bitty aunque la mascota se pasee.
         if not (
@@ -1030,7 +1116,7 @@ class BittyWindow(QWidget):
         self.move(x, y)
 
     def _sprite_y(self) -> int:
-        return 284 if self.mode == "reaction" else 262
+        return self.sprite_off.y()
 
     def _roam(self) -> None:
         self.frame += 1

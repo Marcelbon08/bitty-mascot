@@ -18,7 +18,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Callable
 
-from . import state
+from . import apps, recipes, state
 
 MAX_BODY = 65536
 MAX_COORD = 100000
@@ -84,8 +84,16 @@ class Bridge:
             def do_GET(self) -> None:  # noqa: N802
                 if self.path == "/ping":
                     self._reply(200, {"ok": True, "name": "bitty"})
-                else:
-                    self._reply(404, {"error": "no encontrado"})
+                    return
+                if self.path == "/recipes":
+                    if not hmac.compare_digest(
+                        self.headers.get("X-Bitty-Token", ""), bridge.token
+                    ):
+                        self._reply(401, {"error": "token invalido"})
+                        return
+                    self._reply(200, {"ok": True, "recipes": list(recipes.load().values())})
+                    return
+                self._reply(404, {"error": "no encontrado"})
 
             def do_POST(self) -> None:  # noqa: N802
                 if not hmac.compare_digest(
@@ -117,6 +125,36 @@ class Bridge:
                         self._reply(200, {"ok": True, "agreement": accepted})
                     return
 
+                # Guardar, listar u olvidar recetas no mira ni toca el equipo:
+                # son texto. El permiso nativo lo pide el plugin antes de aquí.
+                if self.path == "/recipes":
+                    action = body.get("action")
+                    try:
+                        if action == "guardar":
+                            recipe = recipes.upsert(body.get("recipe"))
+                        elif action == "olvidar":
+                            recipe_id = body.get("id")
+                            if not isinstance(recipe_id, str) or not recipes.forget(recipe_id):
+                                self._reply(404, {"error": "receta no encontrada"})
+                                return
+                            recipe = None
+                        elif action == "listar":
+                            self._reply(200, {
+                                "ok": True, "recipes": list(recipes.load().values())
+                            })
+                            return
+                        else:
+                            self._reply(400, {"error": "accion no permitida"})
+                            return
+                    except recipes.InvalidRecipe as exc:
+                        self._reply(400, {"error": str(exc)[:200]})
+                        return
+                    except OSError as exc:
+                        self._reply(500, {"error": str(exc)[:200]})
+                        return
+                    self._reply(200, {"ok": True, "recipe": recipe})
+                    return
+
                 # El plugin ya llama a /agreement antes de pedir permiso, pero
                 # el puente no puede fiarse de eso: cualquier proceso local con
                 # el token debe pasar también esta puerta.
@@ -125,6 +163,24 @@ class Bridge:
                         "error": "acuerdo pendiente: lee y acepta en Bitty",
                         "code": "agreement_required",
                     })
+                    return
+
+                if self.path == "/launch":
+                    app = body.get("app")
+                    if not isinstance(app, str) or app not in ALLOWED_OPEN:
+                        self._reply(400, {"error": "aplicacion no permitida"})
+                        return
+                    url = body.get("url")
+                    if url is not None:
+                        try:
+                            url = recipes.validate_url(url)
+                        except recipes.InvalidRecipe as exc:
+                            self._reply(400, {"error": str(exc)[:200]})
+                            return
+                    if not apps.open_app(app, url):
+                        self._reply(400, {"error": "no se pudo abrir la app permitida"})
+                        return
+                    self._reply(200, {"ok": True, "app": app, "url": url})
                     return
 
                 if self.path == "/cursor":

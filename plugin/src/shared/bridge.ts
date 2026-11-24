@@ -29,6 +29,18 @@ export interface BridgeClick extends BridgeCursor {
   click: boolean
 }
 
+export interface BridgeRecipes {
+  ok: boolean
+  recipes: import("./recipes").Recipe[]
+  recipe?: import("./recipes").Recipe | null
+}
+
+export interface BridgeLaunch {
+  ok: boolean
+  app: string
+  url?: string
+}
+
 /** Valida el fichero de conexión antes de usarlo. */
 export function validateConnection(value: any): BridgeConnection | null {
   if (!value || typeof value !== "object") return null
@@ -57,13 +69,13 @@ export async function readConnection(): Promise<BridgeConnection | null> {
 }
 
 /** URL completa, aislada para poder comprobarla en tests. */
-export function bridgeUrl(connection: BridgeConnection, path: "/ping" | "/agreement" | "/cursor" | "/click" | "/capture"): string {
+export function bridgeUrl(connection: BridgeConnection, path: "/ping" | "/agreement" | "/cursor" | "/click" | "/capture" | "/recipes" | "/launch"): string {
   return `http://127.0.0.1:${connection.port}${path}`
 }
 
 /** Llama al puente. Lanza un error claro si Bitty no está o rechaza la petición. */
 export async function callBridge<T>(
-  path: "/agreement" | "/cursor" | "/click" | "/capture",
+  path: "/agreement" | "/cursor" | "/click" | "/capture" | "/recipes" | "/launch",
   body: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<T> {

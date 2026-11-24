@@ -5,6 +5,7 @@ export const INSTALL_ACTION = "bitty.install.mcp"
 export const CURSOR_ACTION = "bitty.cursor"
 export const CLICK_ACTION = "bitty.click"
 export const SCREEN_ACTION = "bitty.screen"
+export const RECIPE_ACTION = "bitty.recipe"
 
 export interface PermissionEvent {
   action?: string
@@ -31,5 +32,10 @@ export function forceAsk(event: PermissionEvent): void {
   if (event.action === SCREEN_ACTION) {
     event.effect = "ask"
     event.message = "Acuerdo leído en Bitty: permiso para capturar tu pantalla ahora. Revisa qué hay visible antes de aceptar."
+    return
+  }
+  if (event.action === RECIPE_ACTION) {
+    event.effect = "ask"
+    event.message = "Bitty quiere usar una receta guardada: puede abrir Brave en una web de Gmail y mirar la pantalla. Nunca guarda ni escribe contraseñas."
   }
 }

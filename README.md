@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.5.4
+> **Windows · macOS · Linux · Fedora** · v2.5.5
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,14 +22,14 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.5.4 |
+| Sistema | Descarga directa v2.5.5 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.4/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.4/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.4/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.4/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.5/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.5/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.5/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.5/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.5.4](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.4)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.5.5](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.5)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI. Los cuatro zips incluyen **[ACUERDO.md](ACUERDO.md)** para leerlo antes de usar la visión o el cursor; en Windows y Linux queda junto a `Bitty.exe`/`Bitty`, y en macOS dentro de `Bitty.app/Contents/Resources`.
 
@@ -84,6 +84,14 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.5.5
+
+- **Bitty recuerda recetas, no contraseñas**: `bitty_recipe` guarda planes cortos (abrir Brave, ir a Gmail, pistas visuales para elegir la cuenta) en `BittyMascot/recipes.json`. Solo se aceptan Brave, HTTPS de `mail.google.com` o `accounts.google.com`, de 1 a 12 pasos y sin campos de secretos: cualquier clave rara o pista con correo/contraseña se rechaza.
+- **Aprende mirando**: `bitty_recipe` con `action=ejecutar` abre Brave en la web de la receta, devuelve una captura fresca y el plan; los clics posteriores siguen con `bitty_screen` y `bitty_click`, cada uno con su permiso nativo. Bitty nunca escribe teclas ni credenciales: si Gmail pide login, lo haces tú.
+- **La mascota no se mueve al abrir el chat**: el bocadillo se abre hacia el lado contrario cuando Bitty está en una esquina; se desplaza el panel (y crece 44 px si va hacia abajo), pero el ancla y el cursor siguen en el mismo sitio.
+- **Cola del bocadillo corregida**: el «cuadro mal dibujado» de la ventana flotante era un `drawRect` de 10×8; ahora es una cola triangular que apunta a Bitty desde cualquier lado.
+- **Verificado**: 34/34 tests Python, 16 tests Node, `typecheck` y build en verde; prueba real con el `.exe` en la esquina superior izquierda: `(18,18) 84×84` → `(20,18) 340×344` con el ancla `(60,60)` intacta.
 
 ## Novedades de v2.5.4
 

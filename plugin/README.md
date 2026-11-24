@@ -76,17 +76,41 @@ Para «ver el escritorio» (incluido tu Opera real) Bitty ya no depende solo del
 
 Cuando la sesión habla de una web, el aviso es contextual: si el MCP ya está disponible, Bitty ofrece mirar la página con esas herramientas; si no lo está, explica que hay que instalarlo con permiso. Nunca instala nada por su cuenta.
 
-## Cursor y visión de pantalla (v2.5.4)
+## Cursor, visión de pantalla y recetas (v2.5.5)
 
 Antes de cualquiera de estas herramientas, Bitty muestra su **acuerdo de 4 líneas** (`> ACUERDO: LEER` para volver a verlo). El botón `ACEPTO` se activa solo después de 6 s; si rechazas, no se pide permiso, no se mira la pantalla y no se mueve nada. Después viene el permiso nativo de OpenCode, que sigue siendo **cada vez**. El mismo texto se reparte en los cuatro paquetes como `ACUERDO.md` y el instalador de Fedora lo muestra al instalar.
 
-El plugin registra tres herramientas en el servidor de OpenCode:
+El plugin registra cuatro herramientas en el servidor de OpenCode:
 
 | Herramienta | Qué hace | Permiso |
 |---|---|---|
 | `bitty_cursor` | Envía `x`, `y` al cursor virtual de la mascota. No mueve tu ratón ni escribe teclas. | Diálogo nativo **cada vez** (`bitty.cursor`), sin `save` |
 | `bitty_click` | Saca el cursor de Bitty (aparcado tras él, puntero terminal 16×16 con mini prompt), captura la pantalla, encuentra el logo de Brave en la barra de tareas, hace su clic visual sobre él y activa la app desde una **whitelist** cerrada. Nunca mueve tu ratón real ni pulsa teclas; después el cursor hace una pausa, **vuelve en arco suave, se atenúa y se mete detrás de Bitty**. | Diálogo nativo **cada vez** (`bitty.click`), sin `save` |
 | `bitty_screen` | Captura todas las pantallas y devuelve el PNG como **data-URL inline** (`data:image/png;base64,...`) para que el modelo vea el escritorio real. Requiere un modelo con visión. | Diálogo nativo **cada vez** (`bitty.screen`), sin `save` |
+| `bitty_recipe` | Memoria de planes visuales: `guardar`, `listar`, `ejecutar` u `olvidar`. `ejecutar` abre Brave en la web permitida y devuelve la captura y los pasos; los clics siguen con `bitty_click`. | Diálogo nativo **cada vez** (`bitty.recipe`), sin `save` |
+
+### Recetas: cómo recuerda Bitty qué hacer
+
+`bitty_recipe` guarda un plan corto en `%APPDATA%/BittyMascot/recipes.json` (o `$XDG_CONFIG_HOME/BittyMascot/recipes.json`). Para el caso de Gmail:
+
+```jsonc
+{
+  "action": "guardar",
+  "id": "gmail-pablomoto",
+  "label": "Gmail de la cuenta conocida",
+  "account": "pablomotoelhormiguero@gmail.com",
+  "url": "https://mail.google.com/mail/u/0/",
+  "steps": [
+    { "kind": "open" },
+    { "kind": "navigate" },
+    { "kind": "look", "hint": "Localizar el selector de cuenta" },
+    { "kind": "click", "hint": "Elegir la cuenta ya iniciada" },
+    { "kind": "verify", "hint": "Comprobar que carga la bandeja" }
+  ]
+}
+```
+
+La receta **no contiene contraseñas**: Bitty abre tu Brave real con la sesión ya iniciada; si Gmail pidiera login, lo haces tú. Se rechazan claves extra, correos en la etiqueta o pistas, `http://`, dominios que no sean de Google y puertos distintos de 443. Cada acción sigue pidiendo permiso nativo; en `ejecutar`, Bitty solo abre la web y mira la pantalla, y los clics posteriores usan `bitty_click` con su propio permiso.
 
 Si Bitty está en **modo gaming** (`> GAMING: ACTIVAR` en su menú), `bitty_cursor` y `bitty_click` se ignoran para no dibujar nada sobre la partida; `bitty_screen` sigue disponible.
 

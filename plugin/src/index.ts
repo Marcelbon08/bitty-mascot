@@ -1,10 +1,14 @@
 import { readFile } from "node:fs/promises"
 import { Plugin } from "@opencode/plugin"
-import { callBridge, type BridgeCapture, type BridgeClick, type BridgeCursor } from "./shared/bridge"
+import {
+  callBridge, type BridgeCapture, type BridgeClick, type BridgeCursor,
+  type BridgeLaunch, type BridgeRecipes,
+} from "./shared/bridge"
 import { installFromRpc } from "./shared/handleInstall"
 import {
-  CLICK_ACTION, CURSOR_ACTION, forceAsk, SCREEN_ACTION,
+  CLICK_ACTION, CURSOR_ACTION, forceAsk, RECIPE_ACTION, SCREEN_ACTION,
 } from "./shared/permission"
+import { describeRecipe, validateRecipe, type Recipe } from "./shared/recipes"
 import { BittyRpc } from "./shared/rpc"
 
 // Antes del permiso nativo: Bitty muestra el acuerdo corto y solo sigue si se
@@ -143,6 +147,126 @@ export default Plugin.define({
               } as const,
             ],
             metadata: { path: shot.path, width: shot.width, height: shot.height, screens: shot.screens },
+          }
+        },
+      })
+
+      editor.add({
+        name: "recipe",
+        description: "Memoria de recetas de Bitty. Guarda, lista, prepara u olvida planes visuales reutilizables (por ejemplo abrir Brave en Gmail y elegir una cuenta). Solo Brave, solo HTTPS de Gmail/Google, sin contraseñas ni tecleo.",
+        input: {
+          type: "object",
+          properties: {
+            action: {
+              type: "string",
+              enum: ["guardar", "listar", "ejecutar", "olvidar"],
+              description: "guardar: aprende una receta; listar: recetas guardadas; ejecutar: abre la web y devuelve el plan y una captura; olvidar: borra una receta",
+            },
+            id: { type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,63}$", description: "Identificador corto de la receta" },
+            label: { type: "string", minLength: 1, maxLength: 60, description: "Nombre legible, sin correos ni secretos" },
+            account: { type: "string", maxLength: 120, description: "Correo de la cuenta ya iniciada; nunca contraseña" },
+            url: { type: "string", maxLength: 300, description: "HTTPS de mail.google.com o accounts.google.com" },
+            steps: {
+              type: "array",
+              minItems: 1,
+              maxItems: 12,
+              items: {
+                type: "object",
+                properties: {
+                  kind: { type: "string", enum: ["open", "navigate", "look", "click", "verify"] },
+                  hint: { type: "string", minLength: 1, maxLength: 60, description: "Pista visual corta, sin correos ni credenciales" },
+                },
+                required: ["kind"],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ["action"],
+          additionalProperties: false,
+        },
+        options: { namespace: "bitty", codemode: true },
+        execute: async (raw, context) => {
+          const input = raw as {
+            action: "guardar" | "listar" | "ejecutar" | "olvidar"
+            id?: string
+            label?: string
+            account?: string
+            url?: string
+            steps?: unknown
+          }
+          await ensureAgreement(context.signal)
+          await ctx.permission.assert({
+            sessionID: context.sessionID,
+            agent: context.agent,
+            source: { type: "tool", messageID: context.messageID, id: context.id },
+            action: RECIPE_ACTION,
+            resources: [input.action, input.id || ""],
+            // Sin `save`: OpenCode pregunta cada vez.
+          })
+
+          if (input.action === "listar") {
+            const result = await callBridge<BridgeRecipes>("/recipes", { action: "listar" }, context.signal)
+            const text = result.recipes.length
+              ? result.recipes.map(describeRecipe).join("\n\n")
+              : "> No hay recetas guardadas todavía."
+            return { content: text }
+          }
+
+          if (input.action === "olvidar") {
+            if (!input.id) throw new Error("Falta el id de la receta.")
+            await callBridge<BridgeRecipes>("/recipes", { action: "olvidar", id: input.id }, context.signal)
+            return { content: `Receta ${input.id} olvidada.` }
+          }
+
+          if (input.action === "guardar") {
+            const recipe = validateRecipe(input)
+            await callBridge<BridgeRecipes>(
+              "/recipes", { action: "guardar", recipe }, context.signal,
+            )
+            return { content: `Receta guardada: ${recipe.label} [${recipe.id}].\n${describeRecipe(recipe)}` }
+          }
+
+          const listed = await callBridge<BridgeRecipes>("/recipes", { action: "listar" }, context.signal)
+          const recipe: Recipe | undefined = listed.recipes.find((item) => item.id === input.id)
+          if (!recipe) throw new Error("No existe esa receta. Usa bitty_recipe con action=listar.")
+
+          // La parte segura de la receta: abrir Brave en la web permitida.
+          // Los pasos visuales siguen con bitty_screen / bitty_click, cada uno
+          // con su propio permiso nativo.
+          if (recipe.url) {
+            await callBridge<BridgeLaunch>(
+              "/launch", { app: "brave", url: recipe.url }, context.signal,
+            )
+          } else if (recipe.steps.some((step) => step.kind === "open")) {
+            await callBridge<BridgeLaunch>("/launch", { app: "brave" }, context.signal)
+          }
+
+          const shot = await callBridge<BridgeCapture>("/capture", {}, context.signal)
+          const bytes = await readFile(shot.path)
+          if (bytes.byteLength > 20 * 1024 * 1024) {
+            throw new Error("La captura supera el límite de 20 MB de OpenCode.")
+          }
+          const dataUrl = `data:image/png;base64,${bytes.toString("base64")}`
+          return {
+            content: [
+              {
+                type: "file",
+                uri: dataUrl,
+                mime: "image/png",
+                name: "bitty-receta.png",
+              } as const,
+              {
+                type: "text",
+                text: `${describeRecipe(recipe)}\n\nBrave está abierto en la web de la receta. Continúa los pasos visuales con bitty_screen y bitty_click; cada uno pedirá permiso. Tu ratón no se mueve y Bitty no escribe credenciales.`,
+              } as const,
+            ],
+            metadata: {
+              id: recipe.id,
+              path: shot.path,
+              width: shot.width,
+              height: shot.height,
+              screens: shot.screens,
+            },
           }
         },
       })

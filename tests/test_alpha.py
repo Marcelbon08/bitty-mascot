@@ -450,6 +450,130 @@ class CursorSpriteTests(unittest.TestCase):
         self.assertEqual(colors["w"], (250, 250, 250))
 
 
+class RecipeTests(unittest.TestCase):
+    BASE = {
+        "id": "gmail-pablomoto",
+        "label": "Gmail de la cuenta conocida",
+        "account": "pablomotoelhormiguero@gmail.com",
+        "url": "https://mail.google.com/mail/u/0/",
+        "steps": [
+            {"kind": "open"},
+            {"kind": "navigate"},
+            {"kind": "look", "hint": "Localizar el selector de cuenta"},
+            {"kind": "click", "hint": "Elegir la cuenta ya iniciada"},
+            {"kind": "verify", "hint": "Comprobar que carga la bandeja"},
+        ],
+    }
+
+    def test_receta_valida_y_persistida(self) -> None:
+        from bitty import recipes
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "recipes.json"
+            with mock.patch.object(recipes, "RECIPES_PATH", path):
+                saved = recipes.upsert(self.BASE)
+                self.assertEqual(saved["account"], self.BASE["account"])
+                self.assertEqual(recipes.get(saved["id"]), saved)
+                self.assertEqual(list(recipes.load()), [saved["id"]])
+                raw = json.loads(path.read_text(encoding="utf-8"))
+                self.assertNotIn("password", json.dumps(raw).lower())
+                self.assertTrue(recipes.forget(saved["id"]))
+                self.assertFalse(recipes.forget(saved["id"]))
+                self.assertEqual(recipes.load(), {})
+
+    def test_receta_rechaza_secretos_urls_y_pasos(self) -> None:
+        from bitty import recipes
+
+        with self.assertRaises(recipes.InvalidRecipe):
+            recipes.validate_recipe({**self.BASE, "password": "1234"})
+        with self.assertRaises(recipes.InvalidRecipe):
+            recipes.validate_recipe({**self.BASE, "label": "correo@ejemplo.com"})
+        for url in (
+            "http://mail.google.com/",
+            "https://ejemplo.com/",
+            "https://u:p@mail.google.com/",
+            "https://mail.google.com:8443/",
+        ):
+            with self.subTest(url=url), self.assertRaises(recipes.InvalidRecipe):
+                recipes.validate_recipe({**self.BASE, "url": url})
+        with self.assertRaises(recipes.InvalidRecipe):
+            recipes.validate_recipe({
+                **self.BASE, "steps": [{"kind": "click", "hint": "password: 1234"}]
+            })
+        with self.assertRaises(recipes.InvalidRecipe):
+            recipes.validate_recipe({**self.BASE, "steps": [{"kind": "cmd"}]})
+        with self.assertRaises(recipes.InvalidRecipe):
+            recipes.validate_recipe({**self.BASE, "steps": []})
+        self.assertIsNone(recipes.validate_url(None))
+
+    def test_bridge_recetas_y_launch_con_whitelist(self) -> None:
+        import http.client
+
+        from bitty import bridge, recipes
+
+        with tempfile.TemporaryDirectory() as tmp:
+            auth_body = json.dumps({"action": "guardar", "recipe": self.BASE})
+            with mock.patch.object(bridge.state, "config_dir", return_value=Path(tmp)), \
+                 mock.patch.object(recipes, "RECIPES_PATH", Path(tmp) / "recipes.json"), \
+                 mock.patch.object(bridge.apps, "open_app", return_value=True) as opener:
+                server = bridge.Bridge(lambda x, y: None, on_gate=lambda: True)
+                server.start()
+                try:
+                    config = json.loads((Path(tmp) / "bridge.json").read_text(encoding="utf-8"))
+                    headers = {
+                        "Content-Type": "application/json",
+                        "X-Bitty-Token": config["token"],
+                    }
+                    client = http.client.HTTPConnection("127.0.0.1", server.port, timeout=5)
+
+                    client.request("GET", "/recipes")
+                    response = client.getresponse()
+                    self.assertEqual(response.status, 401)
+                    response.read()
+
+                    client.request("GET", "/recipes", headers={"X-Bitty-Token": config["token"]})
+                    response = client.getresponse()
+                    self.assertEqual(json.loads(response.read())["recipes"], [])
+
+                    client.request("POST", "/recipes", auth_body, headers)
+                    response = client.getresponse()
+                    self.assertEqual(json.loads(response.read())["recipe"]["id"], self.BASE["id"])
+
+                    client.request("POST", "/recipes", json.dumps({"action": "listar"}), headers)
+                    response = client.getresponse()
+                    self.assertEqual(len(json.loads(response.read())["recipes"]), 1)
+
+                    client.request(
+                        "POST", "/launch",
+                        json.dumps({"app": "brave", "url": self.BASE["url"]}), headers,
+                    )
+                    response = client.getresponse()
+                    self.assertTrue(json.loads(response.read())["ok"])
+                    opener.assert_called_once_with("brave", self.BASE["url"])
+
+                    for body in (
+                        {"app": "cmd /c calc"},
+                        {"app": "brave", "url": "http://ejemplo.com"},
+                    ):
+                        client.request("POST", "/launch", json.dumps(body), headers)
+                        response = client.getresponse()
+                        self.assertEqual(response.status, 400)
+                        response.read()
+                    self.assertEqual(opener.call_count, 1)
+
+                    client.request(
+                        "POST", "/recipes",
+                        json.dumps({"action": "guardar", "recipe": {**self.BASE, "token": "x"}}),
+                        headers,
+                    )
+                    response = client.getresponse()
+                    self.assertEqual(response.status, 400)
+                    response.read()
+                    client.close()
+                finally:
+                    server.stop()
+
+
 class AgreementTests(unittest.TestCase):
     def test_agreement_file_matches_the_dialog(self) -> None:
         from bitty import agreement
@@ -535,6 +659,68 @@ class AgreementTests(unittest.TestCase):
                     client.close()
                 finally:
                     server.stop()
+
+    def test_bubble_flips_at_screen_edges_without_moving_bitty(self) -> None:
+        from PySide6.QtCore import QPoint, QRect, QSize
+
+        from bitty import app as app_module
+
+        class FakeWidget:
+            def __init__(self) -> None:
+                self._geometry = QRect()
+                self.setGeometry = mock.Mock(side_effect=self._set)
+
+            def _set(self, geometry: QRect) -> None:
+                self._geometry = geometry
+
+            def geometry(self) -> QRect:
+                return self._geometry
+
+        screen = mock.Mock()
+        screen.geometry.return_value = QRect(0, 0, 1920, 1080)
+
+        for anchor, expect_flip_x, expect_flip_y in (
+            (QPoint(50, 50), False, True),
+            (QPoint(1870, 50), True, True),
+            (QPoint(1870, 1030), True, False),
+        ):
+            with self.subTest(anchor=anchor):
+                window = app_module.BittyWindow.__new__(app_module.BittyWindow)
+                window.mode = "input"
+                window.anchor = QPoint(anchor)
+                window.height_base = 300
+                window.flip_x = False
+                window.flip_y = False
+                window.panel_shift = 0
+                window.sprite_off = QPoint(42, 42)
+                window.cursor_view = mock.Mock()
+                window.cursor_view.nav.moving = False
+                window.cursor_view.pending_click = False
+                window.cursor_view.returning = False
+                window.move = mock.Mock()
+                window.resize = mock.Mock()
+                window.size = mock.Mock(return_value=QSize(340, 300))
+                for name in app_module.BUBBLE_WIDGETS:
+                    setattr(window, name, FakeWidget())
+                window.exit_btn = FakeWidget()
+
+                with mock.patch.object(app_module.QGuiApplication, "screens", return_value=[screen]):
+                    app_module.BittyWindow._update_location(window)
+
+                x, y = window.move.call_args[0]
+                self.assertGreaterEqual(x, 0)
+                self.assertGreaterEqual(y, 0)
+                self.assertLessEqual(x + 340, 1920)
+                self.assertLessEqual(y + window.size().height(), 1080)
+                self.assertEqual(window.anchor, anchor)
+                self.assertEqual(window.flip_x, expect_flip_x)
+                self.assertEqual(window.flip_y, expect_flip_y)
+
+    def test_bubble_tail_is_a_triangle_not_a_square(self) -> None:
+        source = (ROOT / "bitty" / "app.py").read_text(encoding="utf-8")
+        self.assertNotIn("drawRect(QRect(12, 200, 10, 8))", source)
+        self.assertIn("def _draw_tail(", source)
+        self.assertIn("p.drawPolygon(", source)
 
     def test_gate_queues_agreement_with_a_valid_callback(self) -> None:
         from bitty.app import BittyWindow

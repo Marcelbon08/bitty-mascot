@@ -6,6 +6,24 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.5.5] - 2026-11-24 - recetas reutilizables y bocadillo que no mueve a Bitty
+
+### Añadido
+- **Recetas de Bitty** (`bitty/recipes.py`, `plugin/src/shared/recipes.ts`, tool `bitty_recipe`): memoria local de planes visuales en `BittyMascot/recipes.json`, con `guardar`, `listar`, `ejecutar` y `olvidar`. Esquema cerrado: solo Brave, HTTPS de `mail.google.com`/`accounts.google.com`, 1–12 pasos de tipos `open`, `navigate`, `look`, `click` y `verify`, pistas de hasta 60 caracteres. Sin usuario, contraseña, tokens ni comandos.
+- **Nuevos endpoints del puente**: `GET /recipes` (con token) y `POST /recipes` para guardar/listar/olvidar sin tocar el escritorio; `POST /launch` (con acuerdo y whitelist) abre Brave, opcionalmente en una URL permitida. `/launch` y las acciones siguen pasando por `on_gate`.
+- **Permiso nativo nuevo** `bitty.recipe`, siempre `ask`, sin `save`. El orden sigue siendo acuerdo → permiso → acción.
+
+### Corregido
+- **«Cuadro mal dibujado» en la ventana flotante**: era la cola del bocadillo, un `drawRect(QRect(12, 200, 10, 8))` vacío. Ahora se dibuja con `QPainter.drawPolygon` como una cola triangular que apunta a Bitty desde arriba, abajo, izquierda o derecha.
+- **Bitty se movía al abrir la conversación en una esquina**: `_update_location` probaba las cuatro esquinas del bocadillo y elegía la que cabía sin reescribir el ancla. Si se abre hacia abajo, el panel baja 84 px y la ventana crece 44 px; la mascota y su cursor se quedan donde estaban.
+
+### Verificado
+- 34/34 tests Python y 16 tests Node; `typecheck`, build del plugin y build del `.exe` en verde.
+- Prueba real del `.exe` con `state.json` en `(60,60)` y paseo pausado: antes `(18,18) 84×84`, después de `> HABLAR` `(20,18) 340×344`, ancla y ventana del cursor inalteradas.
+- Recetas rechazan claves extra, correos en la etiqueta, `http://`, dominios ajenos, credenciales en la URL y pistas con secretos.
+
+---
+
 ## [2.5.4] - 2026-11-24 - acuerdo en la instalación y puerta reforzada
 
 ### Añadido

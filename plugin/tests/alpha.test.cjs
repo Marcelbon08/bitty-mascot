@@ -12,8 +12,11 @@ const { opinionSourceLabel, pushHistory } = require(path.join(build, "opinion.js
 const { localOpinion, opinionFromModel } = require(path.join(build, "opina.js"))
 const { safeSessionId, safeAgent, safeDirectory } = require(path.join(build, "validate.js"))
 const {
-  forceAsk, INSTALL_ACTION, CURSOR_ACTION, CLICK_ACTION, SCREEN_ACTION,
+  forceAsk, INSTALL_ACTION, CURSOR_ACTION, CLICK_ACTION, SCREEN_ACTION, RECIPE_ACTION,
 } = require(path.join(build, "permission.js"))
+const {
+  validateRecipe, validateUrl, describeRecipe, RECIPE_HOSTS, RECIPE_KINDS,
+} = require(path.join(build, "recipes.js"))
 const { validateConnection, bridgeUrl, readConnection } = require(path.join(build, "bridge.js"))
 const { installFromRpc } = require(path.join(build, "handleInstall.js"))
 const { browserHint } = require(path.join(build, "hint.js"))
@@ -166,7 +169,7 @@ async function main() {
   })
 
   check("permiso_siempre_pregunta", () => {
-    for (const action of [INSTALL_ACTION, CURSOR_ACTION, CLICK_ACTION, SCREEN_ACTION]) {
+    for (const action of [INSTALL_ACTION, CURSOR_ACTION, CLICK_ACTION, SCREEN_ACTION, RECIPE_ACTION]) {
       const own = { action }
       forceAsk(own)
       assert.equal(own.effect, "ask")
@@ -185,6 +188,40 @@ async function main() {
     forceAsk(other)
     assert.equal(other.effect, undefined)
     assert.equal(other.message, undefined)
+  })
+
+  check("receta_solo_pasos_sin_secretos", () => {
+    const base = {
+      id: "gmail-pablomoto",
+      label: "Gmail de la cuenta conocida",
+      account: "pablomotoelhormiguero@gmail.com",
+      url: "https://mail.google.com/mail/u/0/",
+      steps: [
+        { kind: "open" },
+        { kind: "navigate" },
+        { kind: "look", hint: "Localizar el selector de cuenta" },
+        { kind: "click", hint: "Elegir la cuenta ya iniciada" },
+        { kind: "verify", hint: "Comprobar que carga la bandeja" },
+      ],
+    }
+    const recipe = validateRecipe(base)
+    assert.equal(recipe.account, base.account)
+    assert.deepEqual(RECIPE_HOSTS, ["mail.google.com", "accounts.google.com"])
+    assert.deepEqual(RECIPE_KINDS, ["open", "navigate", "look", "click", "verify"])
+    assert.match(describeRecipe(recipe), /no escribe contraseñas/i)
+
+    assert.throws(() => validateRecipe({ ...base, password: "1234" }), /clave no permitida/)
+    assert.throws(() => validateRecipe({ ...base, label: "correo@ejemplo.com" }), /etiqueta/)
+    assert.throws(() => validateRecipe({ ...base, url: "http://mail.google.com/" }), /HTTPS/)
+    assert.throws(() => validateRecipe({ ...base, url: "https://ejemplo.com/" }), /dominio/)
+    assert.throws(() => validateRecipe({ ...base, url: "https://u:p@mail.google.com/" }), /credenciales/)
+    assert.throws(
+      () => validateRecipe({ ...base, steps: [{ kind: "click", hint: "password: 1234" }] }),
+      /credenciales/,
+    )
+    assert.throws(() => validateRecipe({ ...base, steps: [{ kind: "cmd" }] }), /tipo de paso/)
+    assert.throws(() => validateRecipe({ ...base, steps: [] }), /entre 1 y 12/)
+    assert.equal(validateUrl(undefined), undefined)
   })
 
   // Flujo real del RPC simulado: hook -> validación -> permission.assert -> instalación.
@@ -276,7 +313,7 @@ async function main() {
     const firstAssert = source.indexOf("await ctx.permission.assert(")
     assert.ok(firstAgreement > 0, "falta el acuerdo previo")
     assert.ok(firstAssert > firstAgreement, "el permiso nativo no puede ir antes del acuerdo")
-    assert.equal((source.match(/await ensureAgreement\(/g) || []).length, 3)
+    assert.equal((source.match(/await ensureAgreement\(/g) || []).length, 4)
     assert.match(source, /"\/agreement"/)
   })
 
