@@ -6,20 +6,20 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
-## [Sin publicar] - clic virtual de Bitty
+## [2.5.1] - 2026-11-24 - clic virtual, gaming y estilos de cursor
 
 ### Añadido
 - **Herramienta `bitty_click` y endpoint `/click`**: el cursor de Bitty se mueve a unas coordenadas y muestra su propio clic visual (anillo animado). Opcionalmente abre una app de una **whitelist cerrada** (`brave`); nunca se acepta un comando arbitrario. Permiso nativo `bitty.click` cada vez, sin `save`.
 - **Clic con visión en la barra de tareas** (`bitty/icon_finder.py`, `bitty/desktop_action.py`): al pedir `open: "brave"`, Bitty captura la pantalla, localiza el logo por correlación de plantilla (FFT por ejes, ~1 s) y lleva su cursor hasta él. La activación del botón se hace en el instante del clic sin mover el puntero del usuario.
 - **Cursor aparcado tras Bitty**: antes estaba siempre visible; ahora queda detrás de la mascota y solo sale durante la acción. Al terminar **no desaparece**: vuelve caminando hasta la espalda de Bitty y se queda ahí, bajando de z-order para que el sprite lo tape. Sigue siguiendo a Bitty cuando pasea. Se puede sacar a la vista con `> CURSOR: MOSTRAR`.
-- **Cursor rediseñado** (`bitty/cursor_sprite.py`): puntero pixelado de 16×16 (32×32 px) con filo izquierdo brillante, contorno neón con el acento del tema, cuerpo oscuro de terminal y un mini prompt `>`; cambia con OPENCODE/NAVIDAD/HALLOWEEN. El sprite es transparente fuera de la silueta.
+- **Cuatro estilos de cursor** (`bitty/cursor_sprite.py`): los cuatro usan la misma flecha clásica **completa** de 16×16 (32×32 px), rellena y con su muesca, y cambian con OPENCODE/NAVIDAD/HALLOWEEN. `CLASICO` (contorno negro, cuerpo blanco, filete del tema y prompt `>`), `NEON` (filo brillante, contorno neón e interior oscuro), `TERMINAL` (cuerpo del tema con líneas de escaneo) y `BITTY` (ojos y prompt en negro). Se eligen en `> CURSOR: ESTILO` del menú derecho y se recuerdan en `state.json`. Por defecto entra `CLASICO`.
 - **Vuelta animada del cursor**: tras el clic hay una pausa breve para ver el anillo, luego el cursor regresa describiendo un arco suave y más lento, se atenúa al final y se mete bajo el sprite de Bitty sin desaparecer de golpe.
 - **Modo gaming** (`bitty/gaming.py`): nueva opción `> GAMING: ACTIVAR` en el menú del clic derecho que oculta a Bitty y su cursor para no molestar en Steam, Hydra, Epic Games o cualquier partida. Deja un atajo flotante de 48×48 en la esquina: clic izquierdo devuelve a Bitty y abre el bocadillo, clic derecho solo lo devuelve, y se puede arrastrar. `Ctrl+Alt+B` también sale del modo gaming. En gaming el puente ignora `bitty_cursor` y `bitty_click` para no mover nada en pantalla; la visión sigue disponible.
 - Comando local `/click x,y [brave]` en el panel de Bitty.
 - Plantilla del logo de Brave empaquetada en el binario (`build.py`) y `numpy` añadido a dependencias.
 
 ### Verificado
-- 16/16 tests Python (incluida la búsqueda del logo y rechazo de app desconocida), 14/14 tests Node, `typecheck` y build local. Demo real: Bitty vio el logo en `(1149, 1416)`, su cursor fue hasta él, hizo clic y Brave se abrió sin mover el ratón del usuario; el cursor volvió caminando y quedó aparcado detrás de la mascota.
+- 17/17 tests Python (incluidos los cuatro estilos de cursor, la búsqueda del logo y el rechazo de app desconocida), tests Node, `typecheck` y build local. Demo real: Bitty vio el logo en `(1149, 1416)`, su cursor fue hasta él, hizo clic y Brave se abrió sin mover el ratón del usuario; el cursor volvió caminando y quedó aparcado detrás de la mascota. En el `.exe`: menú `> GAMING: ACTIVAR` oculta Bitty y su cursor y muestra el atajo de 48×48; el clic en el atajo los devuelve.
 
 ## [2.5.0] - 2026-11-23
 

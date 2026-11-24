@@ -18,12 +18,12 @@ from PySide6.QtCore import Qt, QPoint, QSize, QTimer
 from PySide6.QtGui import QColor, QGuiApplication, QPainter
 from PySide6.QtWidgets import QWidget
 
-from .cursor_sprite import ARROW, colors_for
+from .cursor_sprite import DEFAULT_STYLE, SPRITES, ARROW, colors_for, sprite_for
 from .themes import Theme
 from .virtual_cursor import TICK_MS, CursorNavigator, clamp_point
 
-# El sprite vive en cursor_sprite.py: silueta de puntero con marco de terminal,
-# acento del tema, bisel y un mini prompt «>». Aquí solo se escala y se pinta.
+# El sprite vive en cursor_sprite.py: flecha clásica rellena con cuatro
+# acabados Bitty. Aquí solo se elige la variante, se escala y se pinta.
 SCALE = 2
 # Margen suficiente para dibujar el anillo del clic sin recortarlo.
 PAD = 12
@@ -42,9 +42,15 @@ RETURN_MIN_FADE = 0.35
 class BittyCursorView(QWidget):
     """Puntero propio de Bitty, dibujado sobre el escritorio sin capturar entrada."""
 
-    def __init__(self, theme: Theme, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        theme: Theme,
+        style: str = DEFAULT_STYLE,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.theme = theme
+        self.style = style if style in SPRITES else DEFAULT_STYLE
         self.random = random.Random()
         self.home = QPoint()
 
@@ -328,19 +334,26 @@ class BittyCursorView(QWidget):
         self.theme = theme
         self.update()
 
+    def set_style(self, style: str) -> None:
+        """Cambia la variante del puntero sin reiniciar su animación."""
+        if style not in SPRITES:
+            return
+        self.style = style
+        self.update()
+
     # -------------------------------------------------------------- paint
     def paintEvent(self, event) -> None:  # noqa: N802
         palette = self.theme.palette
         # El sprite define su propia paleta; el punto se omite (transparente).
         # La atenuación se aplica aquí para que se vea también en ventanas Tool.
         colors: dict[str, QColor] = {}
-        for char, rgb in colors_for(self.theme).items():
+        for char, rgb in colors_for(self.theme, self.style).items():
             color = QColor(*rgb)
             color.setAlphaF(self.fade)
             colors[char] = color
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
-        for row, line in enumerate(ARROW):
+        for row, line in enumerate(sprite_for(self.style)):
             for column, char in enumerate(line):
                 if char in colors:
                     painter.fillRect(

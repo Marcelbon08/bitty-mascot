@@ -1,35 +1,46 @@
-"""Sprite del cursor propio de Bitty: un puntero neón de terminal.
+"""Sprites del cursor propio de Bitty: puntero clásico completo y variantes.
 
-Decisión de diseño
-------------------
-Se conserva la silueta canónica del puntero (punta arriba a la izquierda, cuerpo
-diagonal y muesca inferior) para que siga reconociéndose como ratón de un
-vistazo, incluso a 32x32 px (16x16 a SCALE=2). La personalidad Bitty/OpenCode
-viene del tratamiento, no de la forma:
+Las cuatro variantes comparten **exactamente la misma silueta**: la flecha
+tradicional de ratón, rellena por completo, con su muesca inferior. Lo que
+cambia es el tratamiento interior, siempre con la paleta de OpenCode:
 
-* ``h`` (bright) es el filo izquierdo: una línea luminosa continua que guía la
-  mirada hacia la punta y destaca incluso sobre fondos oscuros de videojuegos.
-* ``o`` (accent) dibuja el resto del contorno con el color del tema (azul
-  OpenCode, rojo en Navidad, naranja en Halloween). Es el "neón" del cursor.
-* ``d`` (panel) rellena el interior con el negro de la terminal, así que el
-  puntero parece una ventanita recortada y no un cursor genérico de Windows.
-* ``k`` (ink) traza un mini prompt ``>`` en la parte ancha: una pista de que
-  quien mueve este ratón es Bitty, no el usuario.
+* ``clasico`` (por defecto): contorno negro, cuerpo blanco, filete del color
+  del tema por dentro y un mini prompt ``>`` oscuro. Es el más "ratón".
+* ``neon``: filo izquierdo brillante, contorno neón, interior de terminal y
+  prompt claro. El más llamativo sobre fondos oscuros.
+* ``terminal``: cuerpo del color del tema con líneas de escaneo y prompt
+  blanco, como una pantalla de consola.
+* ``bitty``: contorno neón, cuerpo blanco, dos ojos y el prompt en negro.
 
-Frente al diseño anterior (cuerpo sólido del color de acento), aquí el acento
-va en el borde y el cuerpo es oscuro: cambia por completo el aspecto sin perder
-legibilidad ni la identidad del tema.
-
-Este módulo no importa Qt ni Pillow: ``colors_for()`` solo traduce caracteres a
-tuplas RGB de la paleta del tema para que el view las convierta a QColor.
+El módulo no importa Qt ni Pillow: ``colors_for()`` traduce caracteres a RGB
+de la paleta del tema para que ``cursor_view.py`` los pinte.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-# Puntero de 16 x 16. h = filo, o = contorno, d = panel, k = prompt, . = vacío.
-ARROW = (
+# Puntero de 16 x 16. . = transparente; el resto son colores de la paleta.
+CLASICO = (
+    "o...............",
+    "ko..............",
+    "kwo.............",
+    "kwwo............",
+    "kwwwo...........",
+    "kwwwwo..........",
+    "kwdwwwo.........",
+    "kwwdwwwo........",
+    "kwdwwwwwo.......",
+    "kwwwwwwwwo......",
+    "kwwwwwkkwwo.....",
+    "kwwwko..kwwkko..",
+    "kwwo....kwwwwo..",
+    "kwo......kwwwwo.",
+    "ko........kwwwwo",
+    "..........kkkkko",
+)
+
+NEON = (
     "h...............",
     "ho..............",
     "hdo.............",
@@ -40,45 +51,104 @@ ARROW = (
     "hddkdddo........",
     "hdkdddddo.......",
     "hddddddddo......",
-    "hddddoodddo.....",
-    "hdddo..odddoo...",
+    "hdddddooddo.....",
+    "hdddoo..oddooo..",
     "hddo....oddddo..",
     "hdo......oddddo.",
     "ho........oddddo",
     "..........oooooo",
 )
 
-# Punto = píxel transparente (no se pinta). Se declara aquí para que no quede
-# ningún carácter del sprite sin entrada; colors_for() lo omite a propósito.
-TRANSPARENT = "."
+TERMINAL = (
+    "k...............",
+    "kk..............",
+    "kok.............",
+    "kssk............",
+    "koook...........",
+    "kooook..........",
+    "kswsssk.........",
+    "koowoook........",
+    "kowoooook.......",
+    "kssssssssk......",
+    "koooookkook.....",
+    "koookk..kookkk..",
+    "kssk....kssssk..",
+    "kok......kooook.",
+    "kk........kooook",
+    "..........kkkkkk",
+)
 
-# Cada carácter del sprite apunta a una clave real de themes.ORIGINAL_PALETTE.
+BITTY = (
+    "o...............",
+    "oo..............",
+    "owo.............",
+    "owwo............",
+    "owwwo...........",
+    "owwwwo..........",
+    "owkwwwo.........",
+    "owwkwwwo........",
+    "owkwkwkwo.......",
+    "owwwwwwwwo......",
+    "owwwwwoowwo.....",
+    "owwwoo..owwooo..",
+    "owwo....owwwwo..",
+    "owo......owwwwo.",
+    "oo........owwwwo",
+    "..........oooooo",
+)
+
+# Cada carácter apunta a una clave real de themes.ORIGINAL_PALETTE.
 SPRITE_COLORS = {
-    ".": "bg",
-    "h": "bright",
-    "o": "accent",
-    "d": "panel",
-    "k": "ink",
+    "clasico": {"k": "bg", "w": "bright", "o": "accent", "d": "panel"},
+    "neon": {"h": "bright", "o": "accent", "d": "panel", "k": "ink"},
+    "terminal": {"k": "bg", "o": "accent", "s": "shade", "w": "bright"},
+    "bitty": {"o": "accent", "w": "bright", "k": "bg"},
 }
 
+SPRITES = {
+    "clasico": CLASICO,
+    "neon": NEON,
+    "terminal": TERMINAL,
+    "bitty": BITTY,
+}
 
-def colors_for(theme: Any) -> dict[str, tuple[int, int, int]]:
-    """Devuelve ``{carácter: RGB}`` para el tema dado, sin tocar Qt.
+STYLE_LABELS = {
+    "clasico": "CLASICO",
+    "neon": "NEON",
+    "terminal": "TERMINAL",
+    "bitty": "BITTY",
+}
 
-    ``theme`` solo necesita exponer ``.palette`` con claves de themes.py.
-    El carácter transparente no se incluye: quien pinte el sprite debe
-    rellenar solo los caracteres presentes en el dict devuelto.
+DEFAULT_STYLE = "clasico"
+TRANSPARENT = "."
+
+# Compatibilidad: quien importaba ARROW / SPRITE_COLORS sigue obteniendo el
+# sprite por defecto sin tener que conocer el nombre de la variante.
+ARROW = CLASICO
+
+
+def sprite_for(style: str) -> tuple[str, ...]:
+    """Devuelve las filas del sprite pedido (el clásico si no existe)."""
+    return SPRITES.get(style, SPRITES[DEFAULT_STYLE])
+
+
+def colors_for(theme: Any, style: str = DEFAULT_STYLE) -> dict[str, tuple[int, int, int]]:
+    """Devuelve ``{carácter: RGB}`` para el tema y la variante dados.
+
+    El carácter transparente se omite: quien pinte el sprite solo rellena los
+    caracteres presentes en el dict devuelto.
     """
     palette = theme.palette
+    mapping = SPRITE_COLORS.get(style, SPRITE_COLORS[DEFAULT_STYLE])
     return {
         char: tuple(palette[key])
-        for char, key in SPRITE_COLORS.items()
+        for char, key in mapping.items()
         if char != TRANSPARENT
     }
 
 
 if __name__ == "__main__":
-    for line in ARROW:
-        print(line.replace(".", " "))
-    print("caracteres:", " ".join(sorted({c for line in ARROW for c in line})))
-    print("colores:  ", ", ".join(f"{c}={k}" for c, k in SPRITE_COLORS.items()))
+    for style, rows in SPRITES.items():
+        print(f"--- {STYLE_LABELS[style]} ---")
+        for line in rows:
+            print(line.replace(".", " "))

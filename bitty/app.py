@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 
 from . import opencode, state
 from .bridge import Bridge
+from .cursor_sprite import SPRITES, STYLE_LABELS
 from .cursor_view import BittyCursorView
 from .desktop_action import invoke_taskbar_button
 from .gaming import GamingShortcut
@@ -91,6 +92,7 @@ class BittyWindow(QWidget):
         self.data = state.load()
         self.theme_key = self.data["theme"]
         self.theme = resolve_theme(self.theme_key)
+        self.cursor_style = self.data["cursor_style"]
         self.exe = opencode.find_exe()
         opencode.ensure_agent()
 
@@ -143,7 +145,7 @@ class BittyWindow(QWidget):
 
         # Sin padre: si fuera ventana hija de Bitty, Windows la mantendría
         # siempre por encima de su dueño y no podría esconderse detrás.
-        self.cursor_view = BittyCursorView(self.theme)
+        self.cursor_view = BittyCursorView(self.theme, self.cursor_style)
         self.cursor_view.set_home(self.anchor)
         self.cursor_view.go_to(self.anchor.x() + 90, self.anchor.y() + 70)
         # El cursor solo aparece cuando Bitty tiene que actuar.
@@ -295,6 +297,15 @@ class BittyWindow(QWidget):
         self.cursor_demo_action.triggered.connect(self._toggle_cursor_demo)
         self.menu.addAction(self.cursor_demo_action)
         self.menu.addAction("> CURSOR: IR AL CENTRO", self._cursor_center)
+        style_menu = self.menu.addMenu("> CURSOR: ESTILO")
+        self.style_actions = {}
+        for key, label in STYLE_LABELS.items():
+            act = QAction(f"> {label}", self)
+            act.setCheckable(True)
+            act.triggered.connect(lambda checked=False, k=key: self._set_cursor_style(k))
+            style_menu.addAction(act)
+            self.style_actions[key] = act
+        self._sync_style_actions()
         self.menu.addSeparator()
         self.bridge_action = QAction("> PUENTE OPENCODE: DESACTIVAR", self)
         self.bridge_action.setCheckable(True)
@@ -899,6 +910,22 @@ class BittyWindow(QWidget):
         for key, action in getattr(self, "theme_actions", {}).items():
             action.setChecked(key == self.theme_key)
 
+    def _set_cursor_style(self, key: str) -> None:
+        if key not in SPRITES:
+            return
+        self.cursor_style = key
+        self.data["cursor_style"] = key
+        self.cursor_view.set_style(key)
+        self._sync_style_actions()
+        self._save()
+        QToolTip.showText(
+            QCursor.pos(), f"Cursor: {STYLE_LABELS[key]}", self, msecShowTime=1400,
+        )
+
+    def _sync_style_actions(self) -> None:
+        for key, action in getattr(self, "style_actions", {}).items():
+            action.setChecked(key == self.cursor_style)
+
     # ------------------------------------------------------------ movement
     def _update_location(self) -> None:
         off_x, off_y = (42, 42) if self.mode == "idle" else (40, self._sprite_y())
@@ -958,6 +985,7 @@ class BittyWindow(QWidget):
             "session_mode": self.data.get("session_mode", "new"),
             "session_id": self.data.get("session_id", ""),
             "theme": self.theme_key,
+            "cursor_style": self.cursor_style,
         })
         state.save(self.data)
 

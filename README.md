@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.5.0
+> **Windows · macOS · Linux · Fedora** · v2.5.1
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,14 +22,14 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.5.0 |
+| Sistema | Descarga directa v2.5.1 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.0/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.0/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.0/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.0/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.1/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.1/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.1/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.1/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.5.0](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.0)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.5.1](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.1)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI.
 
@@ -85,10 +85,10 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
 
-## Próxima actualización
+## Novedades de v2.5.1
 
 - **Modo gaming para no jorobar partidas**: en el menú del clic derecho aparece `> GAMING: ACTIVAR`. Al activarlo Bitty y su cursor se ocultan por completo (ideal para Steam, Hydra, Epic Games o cualquier juego), pero queda un **atajo flotante de 48×48** en la esquina superior izquierda: **clic izquierdo** devuelve a Bitty y abre su bocadillo, **clic derecho** solo lo devuelve, y se puede arrastrar a otra esquina. `Ctrl+Alt+B` también lo recupera. Mientras estás en gaming, el puente ignora `bitty_cursor` y `bitty_click` para que nada se mueva en pantalla; `bitty_screen` sigue funcionando si lo pides.
-- **Cursor rediseñado**: ahora lleva un filo izquierdo brillante, un contorno neón con el color del tema, el interior oscuro de la terminal y un mini prompt `>`. Es más visible sobre fondos de juego y sigue cambiando con los temas OPENCODE, NAVIDAD y HALLOWEEN.
+- **Cuatro estilos de cursor, todos con la flecha clásica completa**: entra en `> CURSOR: ESTILO` desde el menú derecho y elige `CLASICO` (contorno negro, cuerpo blanco, filete del tema y prompt `>`), `NEON` (filo brillante, contorno neón e interior de terminal), `TERMINAL` (cuerpo del tema con líneas de escaneo) o `BITTY` (ojos y prompt en negro sobre blanco). El estilo se recuerda entre sesiones y cambia con los temas OPENCODE, NAVIDAD y HALLOWEEN.
 
 ## Novedades de v2.5.0
 
@@ -101,7 +101,7 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 ## Novedades de v2.4.7
 
 - **Cursor virtual de Bitty** (mejora 12): hay un segundo puntero pixelado además del tuyo. Recibe coordenadas y se desplaza hacia ellas interpolando un paso cada 20 ms, con desaceleración suave, hasta llegar. Se ve fluido y es multimonitor.
-- **No mueve tu ratón**: el cursor de Bitty está **aparcado detrás de la mascota**, con estética de terminal OpenCode (puntero de 16×16 con filo brillante, contorno neón, interior oscuro y un mini prompt `>`). Sale cuando Bitty va a actuar y, en lugar de desaparecer, hace una pausa tras el clic, **vuelve en un arco suave y se atenúa al meterse bajo el sprite**, donde queda tapado pero vivo. Su ventana es transparente a los clics (`click-through`): el gesto es visible pero no llega al escritorio, no escribe teclas y no mueve tu puntero.
+- **No mueve tu ratón**: el cursor de Bitty está **aparcado detrás de la mascota**, con estética de terminal OpenCode (puntero de 16×16, flecha clásica rellena y cuatro estilos elegibles en `> CURSOR: ESTILO`). Sale cuando Bitty va a actuar y, en lugar de desaparecer, hace una pausa tras el clic, **vuelve en un arco suave y se atenúa al meterse bajo el sprite**, donde queda tapado pero vivo. Su ventana es transparente a los clics (`click-through`): el gesto es visible pero no llega al escritorio, no escribe teclas y no mueve tu puntero.
 - **Cómo mandarlo**: escribe `/cursor 500,300` (o `/cursor 500 300`) en el bocadillo; `/click 500,300 brave` hace que Bitty saque su cursor, mire el logo y abra Brave; `/cursor demo` activa una ruta aleatoria cerca de la mascota y `/cursor para` la detiene. Desde OpenCode se pide con `bitty_cursor`, `bitty_click` o `bitty_screen`. También hay entradas en el menú derecho: **> CURSOR: RUTA ALEATORIA**, **> CURSOR: IR AL CENTRO** y **> CURSOR: OCULTAR/MOSTRAR**.
 - Sigue siendo una sugerencia visual: señala, no actúa. Para editar archivos o pulsar botones reales, OpenCode ya tiene sus propias herramientas y permisos.
 

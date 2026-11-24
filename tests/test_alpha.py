@@ -123,6 +123,7 @@ class StateValidationTests(unittest.TestCase):
             "session_id": "--auto",
             "session_label": "x" * 200,
             "theme": "inesperado",
+            "cursor_style": "inesperado",
         }
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "state.json"
@@ -135,6 +136,7 @@ class StateValidationTests(unittest.TestCase):
         self.assertEqual(data["session_id"], "")
         self.assertEqual(len(data["session_label"]), 80)
         self.assertEqual(data["theme"], "auto")
+        self.assertEqual(data["cursor_style"], "clasico")
         self.assertEqual(data["session_mode"], "continue")
 
 
@@ -327,28 +329,49 @@ class IconFinderTests(unittest.TestCase):
 
 
 class CursorSpriteTests(unittest.TestCase):
-    def test_sprite_is_regular_and_fully_colored(self) -> None:
-        from bitty.cursor_sprite import ARROW, SPRITE_COLORS, colors_for
-
-        self.assertEqual(len({len(row) for row in ARROW}), 1)
-        used = {char for row in ARROW for char in row}
-        self.assertTrue(used <= SPRITE_COLORS.keys())
-        self.assertTrue({"h", "o", "d", "k"} <= used)
+    def test_all_styles_are_regular_and_fully_colored(self) -> None:
+        from bitty.cursor_sprite import (
+            CLASICO, SPRITES, SPRITE_COLORS, colors_for, sprite_for,
+        )
 
         class FakeTheme:
             palette = {
                 "bg": (12, 12, 12),
                 "accent": (107, 143, 255),
                 "bright": (250, 250, 250),
+                "shade": (75, 75, 75),
                 "panel": (22, 22, 22),
                 "ink": (238, 238, 238),
             }
 
+        masks = set()
+        for style, rows in SPRITES.items():
+            with self.subTest(style=style):
+                self.assertEqual(len(rows), 16)
+                self.assertEqual(len({len(row) for row in rows}), 1)
+                used = {char for row in rows for char in row if char != "."}
+                self.assertTrue(used <= SPRITE_COLORS[style].keys())
+                self.assertEqual(sprite_for(style), rows)
+                colors = colors_for(FakeTheme(), style)
+                self.assertNotIn(".", colors)
+                for char in used:
+                    self.assertIn(char, colors)
+                self.assertEqual(colors["o"], (107, 143, 255))
+                masks.add(tuple(
+                    char != "."
+                    for row in rows
+                    for char in row
+                ))
+
+        # Las cuatro variantes son la misma flecha clásica rellena: cambia el
+        # acabado interior, no la silueta ni su muesca inferior.
+        self.assertEqual(len(masks), 1)
+        self.assertEqual(sprite_for("estilo-inexistente"), CLASICO)
+        classic_used = {char for row in CLASICO for char in row}
+        self.assertTrue({"k", "w", "o", "d"} <= classic_used)
         colors = colors_for(FakeTheme())
-        self.assertNotIn(".", colors)
-        self.assertEqual(colors["k"], (238, 238, 238))
-        self.assertEqual(colors["o"], (107, 143, 255))
-        self.assertEqual(colors["d"], (22, 22, 22))
+        self.assertEqual(colors["k"], (12, 12, 12))
+        self.assertEqual(colors["w"], (250, 250, 250))
 
 
 if __name__ == "__main__":

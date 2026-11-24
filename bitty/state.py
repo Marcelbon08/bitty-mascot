@@ -8,6 +8,8 @@ import re
 import sys
 from pathlib import Path
 
+from .cursor_sprite import SPRITES
+
 
 _SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_-]{0,127}$")
 
@@ -30,6 +32,7 @@ DEFAULT = {
     "session_id": "",
     "session_label": "",
     "theme": "auto",
+    "cursor_style": "clasico",
     "bridge_enabled": True,
 }
 
@@ -48,6 +51,8 @@ def load() -> dict:
         data["theme"] = "auto"
     if data.get("session_mode") not in ("new", "continue"):
         data["session_mode"] = "new"
+    if data.get("cursor_style") not in SPRITES:
+        data["cursor_style"] = "clasico"
 
     # Un state.json manipulado no debe poder introducir valores raros en la
     # interfaz ni en los argumentos del ejecutable de OpenCode.
