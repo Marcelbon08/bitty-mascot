@@ -18,6 +18,10 @@ EASE = 0.22
 ARRIVE_PX = 0.8
 
 _CURSOR_RE = re.compile(r"^/cursor\s+(-?\d+)\s*[ ,;]+\s*(-?\d+)\s*$", re.IGNORECASE)
+_CLICK_RE = re.compile(
+    r"^/(?:click|clic)\s+(-?\d+)\s*[ ,;]+\s*(-?\d+)(?:\s+([a-z-]+))?\s*$",
+    re.IGNORECASE,
+)
 
 
 class CursorNavigator:
@@ -88,15 +92,21 @@ def clamp_point(point: tuple[int, int], rects: list[tuple[int, int, int, int]]) 
     return max(left, min(x, right)), max(top, min(y, bottom))
 
 
-def parse_cursor_command(text: str) -> tuple[str, tuple[int, int] | None]:
+def parse_cursor_command(text: str) -> tuple[str, tuple | None]:
     """Interpreta los comandos locales del panel de Bitty.
 
     - `/cursor 500,300` o `/cursor 500 300` -> ('move', (500, 300))
+    - `/click 500,300 [app]` -> ('click', (500, 300, app))
     - `/cursor demo` -> ('demo', None)
     - `/cursor para` -> ('stop', None)
     - cualquier otro texto -> ('', None) para enviarlo a OpenCode.
     """
     cleaned = " ".join(str(text).split())
+    click = _CLICK_RE.match(cleaned)
+    if click:
+        return "click", (
+            int(click.group(1)), int(click.group(2)), (click.group(3) or "").lower()
+        )
     match = _CURSOR_RE.match(cleaned)
     if match:
         return "move", (int(match.group(1)), int(match.group(2)))

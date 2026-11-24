@@ -12,7 +12,7 @@ const { opinionSourceLabel, pushHistory } = require(path.join(build, "opinion.js
 const { localOpinion, opinionFromModel } = require(path.join(build, "opina.js"))
 const { safeSessionId, safeAgent, safeDirectory } = require(path.join(build, "validate.js"))
 const {
-  forceAsk, INSTALL_ACTION, CURSOR_ACTION, SCREEN_ACTION,
+  forceAsk, INSTALL_ACTION, CURSOR_ACTION, CLICK_ACTION, SCREEN_ACTION,
 } = require(path.join(build, "permission.js"))
 const { validateConnection, bridgeUrl, readConnection } = require(path.join(build, "bridge.js"))
 const { installFromRpc } = require(path.join(build, "handleInstall.js"))
@@ -166,7 +166,7 @@ async function main() {
   })
 
   check("permiso_siempre_pregunta", () => {
-    for (const action of [INSTALL_ACTION, CURSOR_ACTION, SCREEN_ACTION]) {
+    for (const action of [INSTALL_ACTION, CURSOR_ACTION, CLICK_ACTION, SCREEN_ACTION]) {
       const own = { action }
       forceAsk(own)
       assert.equal(own.effect, "ask")
@@ -175,6 +175,9 @@ async function main() {
     const cursor = { action: CURSOR_ACTION }
     forceAsk(cursor)
     assert.match(cursor.message, /No moverá tu ratón/)
+    const click = { action: CLICK_ACTION }
+    forceAsk(click)
+    assert.match(click.message, /ratón real no se moverá/)
     const screen = { action: SCREEN_ACTION }
     forceAsk(screen)
     assert.match(screen.message, /capturar tu pantalla/)
@@ -258,6 +261,7 @@ async function main() {
   check("puente_url_y_token", () => {
     const conn = { port: 4321, token: "t".repeat(40), pid: 7 }
     assert.equal(bridgeUrl(conn, "/cursor"), "http://127.0.0.1:4321/cursor")
+    assert.equal(bridgeUrl(conn, "/click"), "http://127.0.0.1:4321/click")
     assert.equal(validateConnection(conn).port, 4321)
     assert.equal(validateConnection({ port: 0, token: "t".repeat(40) }), null)
     assert.equal(validateConnection({ port: 70000, token: "t".repeat(40) }), null)

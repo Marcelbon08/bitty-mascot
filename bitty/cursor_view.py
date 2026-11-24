@@ -7,6 +7,8 @@ que se desplaza hacia las coordenadas que se le dan, interpolando cada 20 ms.
 from __future__ import annotations
 
 import random
+import time
+from typing import Callable
 
 from PySide6.QtCore import Qt, QPoint, QSize, QTimer
 from PySide6.QtGui import QColor, QGuiApplication, QPainter
@@ -34,8 +36,10 @@ ARROW = (
     ".......XX...",
 )
 SCALE = 2
-PAD = 2
+# Margen suficiente para dibujar el anillo del clic sin recortarlo.
+PAD = 12
 DEMO_MS = 1400
+CLICK_MS = 450
 
 
 class BittyCursorView(QWidget):
@@ -70,7 +74,20 @@ class BittyCursorView(QWidget):
         self.demo_timer.setInterval(DEMO_MS)
         self.demo_timer.timeout.connect(self._new_demo_point)
         self.demo = False
-        self.visible = True
+        # Oculto por defecto: solo aparece cuando Bitty va a actuar.
+        self.visible = False
+        self.pinned = False
+
+        # El clic es solo un efecto visual del cursor propio de Bitty.
+        self.click_timer = QTimer(self)
+        self.click_timer.setInterval(40)
+        self.click_timer.timeout.connect(self._click_tick)
+        self.click_started = 0.0
+        self.pending_click = False
+        self.click_callback: Callable[[], None] | None = None
+        self.park_timer = QTimer(self)
+        self.park_timer.setSingleShot(True)
+        self.park_timer.timeout.connect(self.park)
 
     # ------------------------------------------------------------ posición
     @staticmethod
@@ -86,12 +103,10 @@ class BittyCursorView(QWidget):
         self.home = QPoint(point)
 
     def go_to(self, x: int, y: int) -> None:
-        """Manda el cursor hacia una coordenada de pantalla, con Movimiento fluido."""
+        """Manda el cursor hacia una coordenada de pantalla con movimiento fluido."""
         cx, cy = clamp_point((int(x), int(y)), self.screen_rects())
-        if not self.nav.moving:
-            # Solo al inicio: arranca desde donde se le pidió, sin venir de (0, 0).
-            if self.nav.distance == 0 and not self.isVisible():
-                self.nav.snap_to(cx, cy)
+        # Siempre se desplaza desde donde está (tras la mascota). Así se ve
+        # cómo Bitty «saca» su ratón para hacer la acción.
         self.nav.go_to(cx, cy)
         if self.visible:
             self.show()
@@ -109,6 +124,56 @@ class BittyCursorView(QWidget):
         self.move(x, y)
         if not self.nav.moving:
             self.move_timer.stop()
+            if self.pending_click:
+                self._begin_click()
+
+    # ---------------------------------------------------------------- clic
+    def click(self, x: int, y: int, on_clicked: Callable[[], None] | None = None) -> None:
+        """Aparece, llega a (x, y) y hace su clic visual. Luego se aparca."""
+        self.visible = True
+        self.click_callback = on_clicked
+        self.park_timer.stop()
+        self.go_to(x, y)
+        self.pending_click = True
+        if not self.nav.moving:
+            self._begin_click()
+
+    def park(self) -> None:
+        """Vuelve detrás de la mascota. Si no está fijado, desaparece."""
+        self.park_timer.stop()
+        self.click_timer.stop()
+        self.click_started = 0.0
+        self.pending_click = False
+        self.click_callback = None
+        self.move_timer.stop()
+        self.nav.snap_to(self.home.x(), self.home.y())
+        self.move(self.home.x(), self.home.y())
+        self.visible = self.pinned
+        if self.pinned:
+            self.show()
+            self.raise_()
+        else:
+            self.hide()
+
+    def _begin_click(self) -> None:
+        self.pending_click = False
+        self.click_started = time.monotonic()
+        self.click_timer.start()
+        self.update()
+        callback, self.click_callback = self.click_callback, None
+        if callback:
+            try:
+                callback()
+            except Exception:
+                pass
+        # El cursor solo se muestra durante la acción; después se oculta.
+        self.park_timer.start(CLICK_MS + 700)
+
+    def _click_tick(self) -> None:
+        if time.monotonic() - self.click_started >= CLICK_MS / 1000:
+            self.click_timer.stop()
+            self.click_started = 0.0
+        self.update()
 
     # --------------------------------------------------------------- modes
     def toggle_demo(self) -> bool:
@@ -122,6 +187,8 @@ class BittyCursorView(QWidget):
             self.demo_timer.start()
         else:
             self.demo_timer.stop()
+            if not self.pinned:
+                self.park()
         return self.demo
 
     def _new_demo_point(self) -> None:
@@ -135,6 +202,7 @@ class BittyCursorView(QWidget):
             self.toggle_demo()
 
     def set_visible_cursor(self, shown: bool) -> None:
+        self.pinned = shown
         self.visible = shown
         if shown:
             self.show()
@@ -143,11 +211,16 @@ class BittyCursorView(QWidget):
         else:
             self.stop_demo()
             self.move_timer.stop()
-            self.hide()
+            self.park()
 
     def stop(self) -> None:
         self.demo_timer.stop()
         self.move_timer.stop()
+        self.click_timer.stop()
+        self.park_timer.stop()
+        self.click_started = 0.0
+        self.pending_click = False
+        self.click_callback = None
         self.hide()
 
     def set_theme(self, theme: Theme) -> None:
@@ -174,4 +247,17 @@ class BittyCursorView(QWidget):
                         SCALE,
                         colors[char],
                     )
+        if self.click_started:
+            # Anillo que se expande: es el clic del cursor de Bitty, nunca del
+            # ratón del usuario. La ventana sigue siendo transparente a eventos.
+            progress = min(1.0, (time.monotonic() - self.click_started) / (CLICK_MS / 1000))
+            color = QColor(*palette["bright"])
+            color.setAlphaF(1.0 - progress)
+            center = QPoint(PAD + 2, PAD + 6)
+            radius = int(3 + 9 * progress)
+            painter.setPen(color)
+            painter.drawEllipse(center, radius, radius)
+            if progress < 0.4:
+                painter.setBrush(color)
+                painter.drawEllipse(center, 2, 2)
         painter.end()

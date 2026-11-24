@@ -23,6 +23,9 @@ from . import state
 MAX_BODY = 65536
 MAX_COORD = 100000
 KEEP_CAPTURES = 6
+# Únicas apps que el clic virtual de Bitty puede abrir. Nunca se acepta una
+# orden arbitraria: si no está aquí, se rechaza.
+ALLOWED_OPEN = frozenset({"brave"})
 
 
 class Bridge:
@@ -32,9 +35,11 @@ class Bridge:
         self,
         on_cursor: Callable[[int, int], None],
         on_capture: Callable[[Callable[[], None]], None] | None = None,
+        on_click: Callable[[int, int, str], None] | None = None,
     ) -> None:
         self.on_cursor = on_cursor
         self.on_capture = on_capture
+        self.on_click = on_click
         self.token = secrets.token_urlsafe(32)
         self.port = 0
         self.server: ThreadingHTTPServer | None = None
@@ -100,6 +105,26 @@ class Bridge:
                         return
                     bridge.on_cursor(x, y)
                     self._reply(200, {"ok": True, "x": x, "y": y})
+                    return
+
+                if self.path == "/click":
+                    x, y = body.get("x"), body.get("y")
+                    if (
+                        isinstance(x, bool) or isinstance(y, bool)
+                        or not isinstance(x, int) or not isinstance(y, int)
+                        or abs(x) > MAX_COORD or abs(y) > MAX_COORD
+                    ):
+                        self._reply(400, {"error": "coordenadas invalidas"})
+                        return
+                    open_app = body.get("open")
+                    if open_app is not None and (
+                        not isinstance(open_app, str) or open_app not in ALLOWED_OPEN
+                    ):
+                        self._reply(400, {"error": "aplicacion no permitida"})
+                        return
+                    if bridge.on_click:
+                        bridge.on_click(x, y, open_app or "")
+                    self._reply(200, {"ok": True, "x": x, "y": y, "click": True})
                     return
 
                 if self.path == "/capture":

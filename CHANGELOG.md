@@ -6,6 +6,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [Sin publicar] - clic virtual de Bitty
+
+### Añadido
+- **Herramienta `bitty_click` y endpoint `/click`**: el cursor de Bitty se mueve a unas coordenadas y muestra su propio clic visual (anillo animado). Opcionalmente abre una app de una **whitelist cerrada** (`brave`); nunca se acepta un comando arbitrario. Permiso nativo `bitty.click` cada vez, sin `save`.
+- **Clic con visión en la barra de tareas** (`bitty/icon_finder.py`, `bitty/desktop_action.py`): al pedir `open: "brave"`, Bitty captura la pantalla, localiza el logo por correlación de plantilla (FFT por ejes, ~1 s) y lleva su cursor hasta él. La activación del botón se hace en el instante del clic sin mover el puntero del usuario.
+- **Cursor oculto por defecto**: antes estaba siempre visible; ahora queda aparcado tras la mascota y solo aparece durante la acción, para volver a esconderse después. Se puede fijar con `> CURSOR: MOSTRAR`.
+- Comando local `/click x,y [brave]` en el panel de Bitty.
+- Plantilla del logo de Brave empaquetada en el binario (`build.py`) y `numpy` añadido a dependencias.
+
+### Verificado
+- 16/16 tests Python (incluida la búsqueda del logo y rechazo de app desconocida), 14/14 tests Node, `typecheck` y build local. Demo real: Bitty vio el logo en `(1149, 1416)`, su cursor fue hasta él, hizo clic y Brave se abrió sin mover el ratón del usuario; el cursor desapareció después.
+
 ## [2.5.0] - 2026-11-23
 
 ### Añadido

@@ -19,6 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 ICON = ROOT / "bitty" / "resources" / "bitty.ico"
 SPRITES = ROOT / "bitty" / "resources" / "sprites"
+ICONS = ROOT / "bitty" / "resources" / "icons"
 SEP = ";" if sys.platform == "win32" else ":"
 NAME = "Bitty"
 
@@ -84,6 +85,8 @@ def main() -> int:
         "--name", NAME,
         "--add-data", f"{SPRITES}{SEP}bitty/resources/sprites",
     ]
+    if ICONS.is_dir():
+        cmd += ["--add-data", f"{ICONS}{SEP}bitty/resources/icons"]
     if ICON.exists() and sys.platform == "win32":
         cmd += ["--icon", str(ICON)]
     cmd += ["--hidden-import", "pynput", str(ROOT / "run_bitty.py")]

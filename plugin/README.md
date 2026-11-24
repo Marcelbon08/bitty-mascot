@@ -15,7 +15,7 @@ Bitty también vive **dentro de OpenCode**: en la **terminal (TUI)** y en **Open
 | Desktop | Panel lateral **Bitty**, píldora junto al composer y texto en la barra inferior |
 | Desktop | Paleta de comandos, `/bitty` y `Mod+Alt+B`; opinión con `/bitty-opina` o `Mod+Alt+O` |
 | Desktop | `/bitty-ver` y `/bitty-instalar`, con atajos `Mod+Alt+V` y `Mod+Alt+I` |
-| Servidor | Herramientas `bitty_cursor` y `bitty_screen`: mueven el cursor virtual y capturan el escritorio real, con permiso nativo cada vez |
+| Servidor | Herramientas `bitty_cursor`, `bitty_click` y `bitty_screen`: mueven el cursor virtual, hacen su clic visual y capturan el escritorio real, con permiso nativo cada vez |
 
 ### Caras reactivas
 
@@ -82,7 +82,8 @@ El plugin registra dos herramientas en el servidor de OpenCode:
 
 | Herramienta | Qué hace | Permiso |
 |---|---|---|
-| `bitty_cursor` | Envía `x`, `y` al cursor virtual de la mascota. No mueve tu ratón, no hace clics y no escribe teclas. | Diálogo nativo **cada vez** (`bitty.cursor`), sin `save` |
+| `bitty_cursor` | Envía `x`, `y` al cursor virtual de la mascota. No mueve tu ratón ni escribe teclas. | Diálogo nativo **cada vez** (`bitty.cursor`), sin `save` |
+| `bitty_click` | Saca el cursor de Bitty (oculto por defecto), captura la pantalla, encuentra el logo de Brave en la barra de tareas, hace su clic visual sobre él y activa la app desde una **whitelist** cerrada. Nunca mueve tu ratón real ni pulsa teclas; luego el cursor vuelve a esconderse. | Diálogo nativo **cada vez** (`bitty.click`), sin `save` |
 | `bitty_screen` | Captura todas las pantallas y devuelve el PNG como **data-URL inline** (`data:image/png;base64,...`) para que el modelo vea el escritorio real. Requiere un modelo con visión. | Diálogo nativo **cada vez** (`bitty.screen`), sin `save` |
 
 Cómo funciona el puente:

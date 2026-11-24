@@ -213,6 +213,39 @@ class BridgeTests(unittest.TestCase):
                     server.stop()
             self.assertFalse((Path(tmp) / "bridge.json").exists())
 
+    def test_click_only_whitelisted_app(self) -> None:
+        import http.client
+
+        from bitty import bridge
+
+        with tempfile.TemporaryDirectory() as tmp:
+            clicks: list[tuple[int, int, str]] = []
+            with mock.patch.object(bridge.state, "config_dir", return_value=Path(tmp)):
+                server = bridge.Bridge(
+                    lambda x, y: None,
+                    on_click=lambda x, y, app: clicks.append((x, y, app)),
+                )
+                server.start()
+                try:
+                    config = json.loads((Path(tmp) / "bridge.json").read_text(encoding="utf-8"))
+                    auth = {
+                        "Content-Type": "application/json",
+                        "X-Bitty-Token": config["token"],
+                    }
+                    client = http.client.HTTPConnection("127.0.0.1", server.port, timeout=5)
+                    client.request("POST", "/click", '{"x": 10, "y": 20, "open": "brave"}', auth)
+                    response = client.getresponse()
+                    self.assertTrue(json.loads(response.read())["click"])
+                    self.assertEqual(clicks, [(10, 20, "brave")])
+
+                    # Nunca se abre un comando arbitrario aunque venga con token.
+                    client.request("POST", "/click", '{"x": 1, "y": 2, "open": "cmd /c calc"}', auth)
+                    self.assertEqual(client.getresponse().status, 400)
+                    self.assertEqual(clicks, [(10, 20, "brave")])
+                    client.close()
+                finally:
+                    server.stop()
+
 
 class VirtualCursorTests(unittest.TestCase):
     def test_navigator_moves_smoothly_and_arrives(self) -> None:
@@ -262,8 +295,35 @@ class VirtualCursorTests(unittest.TestCase):
         self.assertEqual(parse_cursor_command("/cursor 500,300"), ("move", (500, 300)))
         self.assertEqual(parse_cursor_command("/cursor -12 40"), ("move", (-12, 40)))
         self.assertEqual(parse_cursor_command("/cursor demo"), ("demo", None))
+        self.assertEqual(parse_cursor_command("/click 500,300"), ("click", (500, 300, "")))
+        self.assertEqual(parse_cursor_command("/clic 12 40 brave"), ("click", (12, 40, "brave")))
         self.assertEqual(parse_cursor_command("/cursor para"), ("stop", None))
         self.assertEqual(parse_cursor_command("hola Bitty"), ("", None))
+
+
+class IconFinderTests(unittest.TestCase):
+    def test_finds_logo_in_taskbar_and_rejects_blank_strip(self) -> None:
+        from PIL import Image
+
+        from bitty.icon_finder import TEMPLATES, find_icon
+
+        template = Image.open(TEMPLATES["brave"]).convert("RGBA").resize((30, 30))
+        screenshot = Image.new("RGB", (900, 200), (18, 18, 24))
+        screenshot.paste(template.convert("RGB"), (410, 150), template.getchannel("A"))
+        blank = Image.new("RGB", (900, 200), (18, 18, 24))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            found_path = Path(tmp) / "con-logo.png"
+            blank_path = Path(tmp) / "sin-logo.png"
+            screenshot.save(found_path)
+            blank.save(blank_path)
+
+            found = find_icon(found_path, "brave")
+            self.assertIsNotNone(found)
+            self.assertAlmostEqual(found[0], 425, delta=2)
+            self.assertAlmostEqual(found[1], 165, delta=2)
+            self.assertIsNone(find_icon(blank_path, "brave"))
+            self.assertIsNone(find_icon(found_path, "otra-app"))
 
 
 if __name__ == "__main__":

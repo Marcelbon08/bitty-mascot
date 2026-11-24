@@ -5,8 +5,10 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import random
+import shutil
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import Callable
 
@@ -24,6 +26,9 @@ from PySide6.QtWidgets import (
 from . import opencode, state
 from .bridge import Bridge
 from .cursor_view import BittyCursorView
+from .desktop_action import invoke_taskbar_button
+from .icon_finder import find_icon
+from .screen import capture_to_png
 from .themes import THEMES, resolve_theme, theme_for_date, tint_sprite
 from .virtual_cursor import parse_cursor_command
 
@@ -33,6 +38,19 @@ if getattr(sys, "frozen", False):
 else:
     RESOURCES = Path(__file__).resolve().parent / "resources"
 SPRITES = RESOURCES / "sprites"
+
+# Lista cerrada: el clic virtual solo puede abrir estas apps, nunca un comando
+# que venga de fuera. Se busca en las rutas típicas y en el PATH.
+OPEN_APPS = {
+    "brave": (
+        r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+        r"C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\brave.exe",
+        str(Path.home() / "AppData" / "Local" / "BraveSoftware" / "Brave-Browser" / "Application" / "brave.exe"),
+        "/usr/bin/brave-browser",
+        "/usr/bin/brave",
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+    ),
+}
 
 EXPRESSIONS = {
     "idleA": "bitty-neutral.png", "idleB": "bitty-blink.png",
@@ -125,11 +143,13 @@ class BittyWindow(QWidget):
         self.cursor_view = BittyCursorView(self.theme, self)
         self.cursor_view.set_home(self.anchor)
         self.cursor_view.go_to(self.anchor.x() + 90, self.anchor.y() + 70)
+        # El cursor solo aparece cuando Bitty tiene que actuar.
+        self.cursor_view.park()
 
         # El puente HTTP vive en un hilo: las órdenes se encolan y se aplican
         # desde el timer de Qt, que sí está en el hilo de la interfaz.
         self.bridge_queue: list[tuple[str, tuple]] = []
-        self.bridge = Bridge(self._queue_cursor, self._queue_capture)
+        self.bridge = Bridge(self._queue_cursor, self._queue_capture, self._queue_click)
         self.bridge_action.setChecked(bool(self.data.get("bridge_enabled", True)))
         if self.bridge_action.isChecked():
             try:
@@ -256,9 +276,9 @@ class BittyWindow(QWidget):
         self.menu.addAction("> REPETIR ULTIMO MENSAJE", self._repeat)
         self.menu.addAction("> VOLVER AL CENTRO", self._center)
         self.menu.addSeparator()
-        self.cursor_visible_action = QAction("> CURSOR: OCULTAR", self)
+        self.cursor_visible_action = QAction("> CURSOR: MOSTRAR", self)
         self.cursor_visible_action.setCheckable(True)
-        self.cursor_visible_action.setChecked(True)
+        self.cursor_visible_action.setChecked(False)
         self.cursor_visible_action.triggered.connect(self._toggle_cursor_visible)
         self.menu.addAction(self.cursor_visible_action)
         self.cursor_demo_action = QAction("> CURSOR: RUTA ALEATORIA", self)
@@ -531,6 +551,10 @@ class BittyWindow(QWidget):
             self._cursor_notice(f"CURSOR -> {coords[0]},{coords[1]}")
             self.input_box.clear()
             return
+        if kind == "click" and coords:
+            self._bitty_click(*coords)
+            self.input_box.clear()
+            return
         if kind == "demo":
             self._toggle_cursor_demo()
             self._cursor_notice("CURSOR: RUTA " + ("ON" if self.cursor_view.demo else "OFF"))
@@ -674,6 +698,68 @@ class BittyWindow(QWidget):
     def _queue_capture(self, work: Callable[[], None]) -> None:
         self.bridge_queue.append(("capture", (work,)))
 
+    def _queue_click(self, x: int, y: int, open_app: str) -> None:
+        self.bridge_queue.append(("click", (x, y, open_app)))
+
+    @staticmethod
+    def _open_app(name: str) -> bool:
+        """Abre solo una app de la whitelist, sin ejecutar comandos arbitrarios."""
+        candidates = OPEN_APPS.get(name)
+        if not candidates:
+            return False
+        for candidate in (*candidates, name):
+            path = candidate if Path(candidate).is_file() else shutil.which(candidate)
+            if path:
+                subprocess.Popen([path], shell=False)
+                return True
+        return False
+
+    def _bitty_click(self, x: int, y: int, open_app: str = "") -> None:
+        """Bitty ve el logo, saca su cursor, hace clic y activa la app.
+
+        El cursor propio de Bitty es el que hace el gesto visible. Tu ratón
+        real nunca se mueve ni pulsa nada: la activación del botón de la barra
+        de tareas se hace en el mismo instante por UI Automation, y solo para
+        apps de la whitelist.
+        """
+        target = (x, y)
+        seen = "CLIC VISUAL"
+        if open_app:
+            self._cursor_notice("BITTY ESTA BUSCANDO EL LOGO...")
+            shot = self.bridge.capture_dir / (
+                "vision-%d.png" % int(_dt.datetime.now().timestamp() * 1000)
+            )
+            try:
+                info = capture_to_png(shot)
+                located = find_icon(Path(info["path"]), open_app)
+                if located:
+                    target = (located[0], located[1])
+                    seen = "LOGO VISTO"
+            except Exception:
+                seen = "SIN VISION"
+            finally:
+                shot.unlink(missing_ok=True)
+            if seen == "SIN VISION":
+                seen = "COORDENADA DADA"
+
+            def on_clicked() -> None:
+                # La activación va en otro hilo: el clic visual y el ocultado
+                # del cursor no deben esperar a PowerShell/UI Automation.
+                def work() -> None:
+                    if not invoke_taskbar_button(open_app):
+                        self._open_app(open_app)
+
+                threading.Thread(target=work, name="bitty-open", daemon=True).start()
+
+            self.cursor_view.click(target[0], target[1], on_clicked)
+        else:
+            self.cursor_view.click(target[0], target[1])
+        self._cursor_notice(
+            f"CLIC DE BITTY -> {target[0]},{target[1]} "
+            f"({seen}; RATÓN INTACTO)"
+        )
+        self.sprite_override = "curious"
+
     def _apply_bridge_queue(self) -> None:
         while self.bridge_queue:
             kind, payload = self.bridge_queue.pop(0)
@@ -682,6 +768,8 @@ class BittyWindow(QWidget):
                 self.cursor_view.go_to(x, y)
                 self._cursor_notice(f"CURSOR -> {x},{y} (OPENCODE)")
                 self.sprite_override = "curious"
+            elif kind == "click":
+                self._bitty_click(*payload)
             elif kind == "capture":
                 self.sprite_override = "surprise"
                 self._cursor_notice("BITTY ESTA MIRANDO LA PANTALLA")

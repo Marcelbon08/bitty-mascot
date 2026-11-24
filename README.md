@@ -87,7 +87,7 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 
 ## Novedades de v2.5.0
 
-- **Bitty y OpenCode comparten el cursor**: el plugin registra las herramientas `bitty_cursor` y `bitty_screen`. OpenCode puede pedirle a Bitty que mueva su cursor virtual a unas coordenadas, sin tocar tu ratón ni hacer clics.
+- **Bitty y OpenCode comparten el cursor**: el plugin registra `bitty_cursor`, `bitty_click` y `bitty_screen`. OpenCode puede pedirle a Bitty que saque su cursor, haga **su propio clic visual** y abra una app de su lista cerrada (`brave`). Con `open: "brave"`, Bitty mira la pantalla, localiza el logo en la barra de tareas y hace clic ahí; tu ratón no se mueve ni se escriben teclas.
 - **Visión de pantalla para OpenCode**: `bitty_screen` captura todas tus pantallas (o la principal) y se la entrega al modelo como **data-URL inline** (la forma que OpenCode 2.3.2 sabe leer en resultados de herramientas). Es la forma de que un modelo **con visión** vea tu escritorio real, incluido tu Opera. No es el navegador oculto de Playwright.
 - **Privacidad por diseño**: el puente solo escucha en `127.0.0.1`, usa un token aleatorio guardado en `BittyMascot/bridge.json` (modo `0600` en POSIX) y **pide permiso nativo cada vez** para mover el cursor o mirar la pantalla. No hay opción de «permitir siempre». Puedes desactivar el puente desde el menú derecho (`> PUENTE OPENCODE`).
 - **Sin vídeo permanente**: la visión es bajo demanda: cada vez que el modelo necesita ver, pide una captura nueva. Es una imagen fresca, no una grabación ni un stream continuo. Las capturas se guardan en temporal, se limitan a 6 y se borran al salir.
@@ -96,7 +96,7 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 ## Novedades de v2.4.7
 
 - **Cursor virtual de Bitty** (mejora 12): hay un segundo puntero pixelado además del tuyo. Recibe coordenadas y se desplaza hacia ellas interpolando un paso cada 20 ms, con desaceleración suave, hasta llegar. Se ve fluido y es multimonitor.
-- **No mueve tu ratón**: la ventana del cursor es siempre visible y transparente a los clics (`click-through`). No hace clics, no escribe teclas y no roba el foco. Bitty sigue sin interrumpirte.
+- **No mueve tu ratón**: el cursor de Bitty está **oculto detrás de la mascota** y solo sale cuando Bitty va a actuar; después vuelve a esconderse. Su ventana es transparente a los clics (`click-through`): el gesto es visible pero no llega al escritorio, no escribe teclas y no mueve tu puntero. Bitty sigue sin interrumpirte.
 - **Cómo mandarlo**: escribe `/cursor 500,300` (o `/cursor 500 300`) en el bocadillo; `/cursor demo` activa una ruta aleatoria cerca de la mascota y `/cursor para` la detiene. También hay entradas en el menú derecho: **> CURSOR: RUTA ALEATORIA**, **> CURSOR: IR AL CENTRO** y **> CURSOR: OCULTAR/MOSTRAR**.
 - Sigue siendo una sugerencia visual: señala, no actúa. Para editar archivos o pulsar botones reales, OpenCode ya tiene sus propias herramientas y permisos.
 
@@ -263,7 +263,8 @@ export BITTY_WORKDIR="$HOME/MisProyectos"  # macOS/Linux
 | Rueda / flechas | Recorre la respuesta larga |
 | `↑` / `↓` | Historial de mensajes |
 | Clic derecho | Menú integrado (incluye **> TEMA** y las opciones **> CURSOR**) |
-| `/cursor 500,300` | Mueve el cursor de Bitty a esas coordenadas (sin tocar el tuyo) |
+| `/cursor 500,300` | Saca el cursor de Bitty y lo mueve a esas coordenadas (sin tocar el tuyo) |
+| `/click 500,300 brave` | Bitty ve el logo en la barra de tareas, va hasta él, hace su clic y abre Brave |
 | `/cursor demo` / `/cursor para` | Ruta aleatoria del cursor de Bitty / detenerla |
 | Arrastrar | Mueve a Bitty por todas las pantallas |
 | `Ctrl+Alt+B` / `⌘+Alt+B` | Abre el bocadillo desde cualquier ventana |

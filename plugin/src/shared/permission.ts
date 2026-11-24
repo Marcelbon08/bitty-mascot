@@ -3,6 +3,7 @@
 
 export const INSTALL_ACTION = "bitty.install.mcp"
 export const CURSOR_ACTION = "bitty.cursor"
+export const CLICK_ACTION = "bitty.click"
 export const SCREEN_ACTION = "bitty.screen"
 
 export interface PermissionEvent {
@@ -20,6 +21,11 @@ export function forceAsk(event: PermissionEvent): void {
   if (event.action === CURSOR_ACTION) {
     event.effect = "ask"
     event.message = "Bitty quiere mover su cursor virtual a unas coordenadas. No moverá tu ratón ni hará clics."
+    return
+  }
+  if (event.action === CLICK_ACTION) {
+    event.effect = "ask"
+    event.message = "Bitty quiere mover su cursor virtual, hacer clic y abrir una app de su lista permitida. Tu ratón real no se moverá."
     return
   }
   if (event.action === SCREEN_ACTION) {

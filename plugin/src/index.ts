@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises"
 import { Plugin } from "@opencode/plugin"
-import { callBridge, type BridgeCapture, type BridgeCursor } from "./shared/bridge"
+import { callBridge, type BridgeCapture, type BridgeClick, type BridgeCursor } from "./shared/bridge"
 import { installFromRpc } from "./shared/handleInstall"
 import {
-  CURSOR_ACTION, forceAsk, SCREEN_ACTION,
+  CLICK_ACTION, CURSOR_ACTION, forceAsk, SCREEN_ACTION,
 } from "./shared/permission"
 import { BittyRpc } from "./shared/rpc"
 
@@ -57,6 +57,39 @@ export default Plugin.define({
           })
           const result = await callBridge<BridgeCursor>("/cursor", input, context.signal)
           return { content: `Cursor de Bitty movido a (${result.x}, ${result.y}).` }
+        },
+      })
+
+      editor.add({
+        name: "click",
+        description: "Mueve el cursor de Bitty, hace su clic visual y puede abrir una app permitida (brave). Nunca mueve el ratón del usuario ni pulsa teclas.",
+        input: {
+          type: "object",
+          properties: {
+            x: { type: "integer", minimum: -100000, maximum: 100000, description: "Coordenada X absoluta de pantalla" },
+            y: { type: "integer", minimum: -100000, maximum: 100000, description: "Coordenada Y absoluta de pantalla" },
+            open: { type: "string", enum: ["brave"], description: "App permitida que Bitty abrirá tras el clic" },
+          },
+          required: ["x", "y"],
+          additionalProperties: false,
+        },
+        options: { namespace: "bitty", codemode: true },
+        execute: async (raw, context) => {
+          const input = raw as { x: number, y: number, open?: "brave" }
+          await ctx.permission.assert({
+            sessionID: context.sessionID,
+            agent: context.agent,
+            source: { type: "tool", messageID: context.messageID, id: context.id },
+            action: CLICK_ACTION,
+            resources: [input.open ? `${input.x},${input.y}:${input.open}` : `${input.x},${input.y}`],
+            // Sin `save`: OpenCode pregunta cada vez.
+          })
+          const result = await callBridge<BridgeClick>("/click", input, context.signal)
+          return {
+            content: `Clic de Bitty en (${result.x}, ${result.y}).`
+              + (input.open ? ` Abriendo ${input.open}.` : "")
+              + " Tu ratón no se ha movido.",
+          }
         },
       })
 
