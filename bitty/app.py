@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import datetime as _dt
-import json
 import random
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 from typing import Callable
 
-from PIL import Image
 from PySide6.QtCore import Qt, QEvent, QPoint, QRect, QSize, QTimer, Signal
 from PySide6.QtGui import (
     QAction, QColor, QCursor, QFont, QGuiApplication, QImage, QKeySequence,
@@ -31,8 +30,6 @@ from .cursor_sprite import SPRITES as CURSOR_STYLES, STYLE_LABELS
 from .cursor_view import BittyCursorView
 from .desktop_action import invoke_taskbar_button
 from .gaming import GamingShortcut
-from .icon_finder import find_icon
-from .screen import capture_to_png
 from .themes import THEMES, resolve_theme, theme_for_date, tint_sprite
 from .virtual_cursor import parse_cursor_command
 
@@ -144,6 +141,13 @@ class BittyWindow(QWidget):
         self.override_until = _dt.datetime.min
         self._last_hotkey = _dt.datetime.min
         self.pixmap_cache: dict[tuple[str, str], QPixmap] = {}
+        # Fuentes y estado reutilizables: recrearlos en cada repintado o
+        # escribir state.json cada dos segundos era trabajo innecesario.
+        self.font_small = QFont("Consolas", 6)
+        self.font_header = QFont("Consolas", 9, QFont.Weight.Bold)
+        self._state_dirty = True
+        self._last_state_json = ""
+        self._last_save = 0.0
 
         self._build_ui()
         self._build_menu()
@@ -362,8 +366,15 @@ class BittyWindow(QWidget):
         self.menu.addAction("> SALIR DE BITTY", self._quit)
 
     def _build_timers(self) -> None:
+        # La cola del puente y el guardado se atienden a 4 Hz; el paseo, a
+        # 12,5 Hz con pasos mayores. Antes todo se despertaba 25 veces/s.
+        self.bridge_timer = QTimer(self)
+        self.bridge_timer.setInterval(250)
+        self.bridge_timer.timeout.connect(self._bridge_tick)
+        self.bridge_timer.start()
+
         self.roam_timer = QTimer(self)
-        self.roam_timer.setInterval(40)
+        self.roam_timer.setInterval(80)
         self.roam_timer.timeout.connect(self._roam)
         self.roam_timer.start()
 
@@ -412,6 +423,7 @@ class BittyWindow(QWidget):
         path = SPRITES / EXPRESSIONS.get(name, EXPRESSIONS["normal"])
         if not path.exists():
             return QPixmap()
+        from PIL import Image  # importado tarde: solo se necesita para sprites
         source = Image.open(path).convert("RGBA")
         themed = tint_sprite(source, self.theme)
         data = themed.tobytes("raw", "RGBA")
@@ -431,6 +443,7 @@ class BittyWindow(QWidget):
         return self.reaction if self.reaction in EXPRESSIONS else "normal"
 
     def _rotate_faces(self) -> None:
+        before = self.current_face()
         self.wait_face_index += 1
         if self.mode == "idle" and self.wait_proc is None:
             self.idle_face_index += 1
@@ -439,7 +452,8 @@ class BittyWindow(QWidget):
         if self.mode == "idle" and self.frame % 20 == 0:
             self.sprite_override = "idleB"
             self.override_until = _dt.datetime.now() + _dt.timedelta(milliseconds=240)
-        self.update()
+        if self.current_face() != before:
+            self.update()
 
     def _check_auto_theme(self) -> None:
         if self.theme_key == "auto":
@@ -457,8 +471,7 @@ class BittyWindow(QWidget):
         if self.mode == "idle":
             sprite = self.pixmap(self.current_face())
             p.drawPixmap((84 - sprite.width()) // 2, (84 - sprite.height()) // 2, sprite)
-            font = QFont("Consolas", 6)
-            p.setFont(font)
+            p.setFont(self.font_small)
             p.setPen(col("muted"))
             text_w = p.fontMetrics().horizontalAdvance("BITTY")
             p.drawText((84 - text_w) // 2, 81, "BITTY")
@@ -471,7 +484,7 @@ class BittyWindow(QWidget):
             p.fillRect(QRect(12, header_y, 316, 20), col("subtle"))
             p.drawLine(15, header_y + 20, 325, header_y + 20)
             p.setPen(col("bright"))
-            p.setFont(QFont("Consolas", 9, QFont.Weight.Bold))
+            p.setFont(self.font_header)
             p.drawText(18, header_y + 14, f"> {self.theme.label} / OPENCODE")
             self._draw_tail(p, panel, self.sprite_off, col("accent"))
 
@@ -502,6 +515,7 @@ class BittyWindow(QWidget):
 
     # --------------------------------------------------------------- mode
     def set_mode(self, mode: str, reaction: str = "normal", text: str = "") -> None:
+        changed = (self.mode, self.reaction, self.bubble_text) != (mode, reaction, text)
         self.stop_waiting()
         self.mode = mode
         self.reaction = reaction
@@ -532,7 +546,8 @@ class BittyWindow(QWidget):
         self.exit_btn.setVisible(mode != "idle")
         self._update_buttons()
         self._update_location()
-        self.update()
+        if changed:
+            self.update()
 
     def _update_buttons(self) -> None:
         is_input = self.mode == "input"
@@ -563,7 +578,7 @@ class BittyWindow(QWidget):
         self.data["session_mode"] = "new"
         self.data["session_id"] = ""
         self._sync_session_ui()
-        state.save(self.data)
+        self._save()
 
     def _update_sessions(self) -> None:
         sessions = opencode.list_sessions(self.exe) if self.exe else []
@@ -598,7 +613,7 @@ class BittyWindow(QWidget):
             self.data["session_mode"] = "new"
             self.data["session_id"] = ""
         self._sync_session_ui()
-        state.save(self.data)
+        self._save()
 
     def _sync_session_ui(self) -> None:
         is_new = self.data["session_mode"] == "new"
@@ -733,7 +748,7 @@ class BittyWindow(QWidget):
         self.data["session_id"] = self.last_session_id
         self.data["session_label"] = "esta conversacion"
         self.set_mode("input", "normal", "")
-        state.save(self.data)
+        self._save()
 
     def _open_app(self) -> None:
         if not self.last_session_id:
@@ -850,6 +865,11 @@ class BittyWindow(QWidget):
         target = (x, y)
         seen = "CLIC VISUAL"
         if open_app:
+            # NumPy/Pillow solo se cargan cuando Bitty tiene que «ver» el logo.
+            # Arrancar la mascota no paga el coste de OpenBLAS ni de la FFT.
+            from .icon_finder import find_icon
+            from .screen import capture_to_png
+
             self._cursor_notice("BITTY ESTA BUSCANDO EL LOGO...")
             shot = self.bridge.capture_dir / (
                 "vision-%d.png" % int(_dt.datetime.now().timestamp() * 1000)
@@ -955,6 +975,7 @@ class BittyWindow(QWidget):
         self.close_bubble()
         self.gaming = True
         self.cursor_view.stop()
+        self.roam_timer.stop()
         self.hide()
         self.gaming_shortcut.set_theme(self.theme)
         self.gaming_shortcut.show()
@@ -966,6 +987,7 @@ class BittyWindow(QWidget):
         self.gaming = False
         self.show()
         self.raise_()
+        self.roam_timer.start()
         self.cursor_view.park()
         self._sync_gaming_action()
 
@@ -1106,26 +1128,33 @@ class BittyWindow(QWidget):
             x, y = chosen[5], chosen[6]
 
         self.cursor_view.set_home(self.anchor)
-        # Si está aparcado, sigue a Bitty aunque la mascota se pasee.
+        # Si está aparcado, sigue a Bitty con un movimiento mínimo: nada de
+        # detener timers, mostrar ventanas ni cambiar el Z en cada píxel.
         if not (
             self.cursor_view.nav.moving
             or self.cursor_view.pending_click
             or self.cursor_view.returning
         ):
-            self.cursor_view.park()
+            self.cursor_view.follow_home()
         self.move(x, y)
 
     def _sprite_y(self) -> int:
         return self.sprite_off.y()
 
+    def _bridge_tick(self) -> None:
+        """Trabajo que no necesita 12,5 Hz: cola, cierre de respuesta y guardado."""
+        self._apply_bridge_queue()
+        if (
+            not self.gaming and self.mode == "reaction"
+            and _dt.datetime.now() > self.reaction_until
+        ):
+            self.close_bubble()
+        self._flush_state()
+
     def _roam(self) -> None:
         self.frame += 1
-        self._apply_bridge_queue()
-        if self.gaming:
-            # Bitty está oculto: ni paseo ni guardado periódico de posición.
+        if self.gaming or not self.isVisible():
             return
-        if self.mode == "reaction" and _dt.datetime.now() > self.reaction_until:
-            self.close_bubble()
         if self.mode != "input" and not self.dragging and not self.roam_paused:
             dx = self.roam_target.x() - self.anchor.x()
             dy = self.roam_target.y() - self.anchor.y()
@@ -1135,14 +1164,23 @@ class BittyWindow(QWidget):
                     self.roam_center.y() + self.random.randint(-12, 12),
                 )
             else:
-                step_x = max(-1, min(1, int(dx / 3)))
-                step_y = max(-1, min(1, int(dy / 3)))
+                # Pasos de hasta 3 px a 12,5 Hz: misma velocidad visual que
+                # 1 px a 25 Hz, con la mitad de despertares y movimientos.
+                step_x = max(-3, min(3, int(dx / 2)))
+                step_y = max(-3, min(3, int(dy / 2)))
                 self.anchor = QPoint(self.anchor.x() + step_x, self.anchor.y() + step_y)
+                self._state_dirty = True
                 self._update_location()
-        if self.frame % 50 == 0:
-            self._save()
 
-    def _save(self) -> None:
+    def _flush_state(self) -> None:
+        """Escribe como muy cada 5 s y solo si la posición/opciones cambiaron."""
+        if not self._state_dirty:
+            return
+        if time.monotonic() - self._last_save < 5.0:
+            return
+        self._save(force=True)
+
+    def _save(self, force: bool = True) -> None:
         self.data.update({
             "x": self.anchor.x(), "y": self.anchor.y(),
             "roam_paused": self.roam_paused,
@@ -1152,7 +1190,16 @@ class BittyWindow(QWidget):
             "cursor_style": self.cursor_style,
             "agreement_version": self.data.get("agreement_version", 0),
         })
-        state.save(self.data)
+        payload = state.serialize(self.data)
+        if not force and payload == self._last_state_json:
+            return
+        try:
+            state.save(self.data)
+        except OSError:
+            return
+        self._last_state_json = payload
+        self._last_save = time.monotonic()
+        self._state_dirty = False
 
     # --------------------------------------------------------------- mouse
     def keyPressEvent(self, event) -> None:  # noqa: N802

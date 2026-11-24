@@ -13,6 +13,7 @@ import {
   FACES,
   moodForEvent,
   moodFromVerdict,
+  shouldCoalesce,
   type Mood,
 } from "./shared/faces"
 import {
@@ -164,11 +165,16 @@ export default Plugin.define({
       }
     }
 
-    const react = (type: string) => {
+    let burstTimer: ReturnType<typeof setTimeout> | undefined
+    let burstType = ""
+
+    const applyReaction = (type: string) => {
       signals.push(type)
       if (signals.length > 40) signals.shift()
 
       if (type === "session.created") {
+        if (burstTimer) clearTimeout(burstTimer)
+        burstTimer = undefined
         signals.length = 0
         setOpinion(EMPTY_OPINION)
         setHistory([])
@@ -189,6 +195,24 @@ export default Plugin.define({
       const status = opinion().status
       if (SETTLED_EVENTS.has(type) && status !== "thinking" && status !== "ready") {
         void refresh(false)
+      }
+    }
+
+    // Streaming: agrupamos deltas en ráfagas de 80 ms para no reconstruir
+    // señales ni temporizadores cientos de veces por segundo.
+    const react = (type: string) => {
+      if (!shouldCoalesce(type)) {
+        applyReaction(type)
+        return
+      }
+      if (signals[signals.length - 1] !== type) signals.push(type)
+      if (signals.length > 40) signals.shift()
+      burstType = type
+      if (!burstTimer) {
+        burstTimer = setTimeout(() => {
+          burstTimer = undefined
+          applyReaction(burstType)
+        }, 80)
       }
     }
 
@@ -239,6 +263,7 @@ export default Plugin.define({
         return onCleanup(() => {
           stops.forEach((stop) => stop())
           if (timer) clearTimeout(timer)
+          if (burstTimer) clearTimeout(burstTimer)
         })
       },
     )

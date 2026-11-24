@@ -75,12 +75,17 @@ def load() -> dict:
     return data
 
 
+def serialize(data: dict) -> str:
+    """Representación estable del estado; permite no escribir si no cambió."""
+    return json.dumps(
+        {k: data.get(k, v) for k, v in DEFAULT.items()},
+        ensure_ascii=False, sort_keys=True,
+    )
+
+
 def save(data: dict) -> None:
     try:
         STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        STATE_PATH.write_text(
-            json.dumps({k: data.get(k, v) for k, v in DEFAULT.items()}, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        STATE_PATH.write_text(serialize(data), encoding="utf-8")
     except OSError:
         pass

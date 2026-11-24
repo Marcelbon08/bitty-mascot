@@ -337,7 +337,7 @@ class VirtualCursorTests(unittest.TestCase):
         while nav.moving and steps < 200:
             x, y = nav.advance()
             self.assertGreaterEqual(x, previous)
-            self.assertLessEqual(x - previous, 17)  # tope de 16 px + redondeo
+            self.assertLessEqual(x - previous, 23)  # tope de 22 px + redondeo
             self.assertEqual(y, 0)
             previous = x
             steps += 1
@@ -741,6 +741,93 @@ class AgreementTests(unittest.TestCase):
         # Una segunda llamada no abre otro diálogo mientras hay uno pendiente.
         self.assertFalse(window._gate_action())
         self.assertEqual(len(window.bridge_queue), 1)
+
+
+class PerformanceTests(unittest.TestCase):
+    def test_startup_does_not_import_vision_eagerly(self) -> None:
+        import ast
+
+        source = (ROOT / "bitty" / "app.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        top_level: set[str] = set()
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                top_level.update(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                top_level.add(node.module or "")
+        self.assertNotIn("PIL", top_level)
+        self.assertNotIn("bitty.icon_finder", top_level)
+        self.assertIn("from .icon_finder import find_icon", source)
+        self.assertIn("from .screen import capture_to_png", source)
+
+    def test_timers_are_slower_and_fonts_are_reused(self) -> None:
+        source = (ROOT / "bitty" / "app.py").read_text(encoding="utf-8")
+        self.assertIn("self.bridge_timer.setInterval(250)", source)
+        self.assertIn("self.roam_timer.setInterval(80)", source)
+        self.assertIn("self.font_small", source)
+        self.assertIn("p.setFont(self.font_small)", source)
+        self.assertNotIn('QFont("Consolas", 6)', source.split("def paintEvent", 1)[-1])
+        self.assertIn("self.roam_timer.stop()", source)
+
+    def test_parked_cursor_does_not_keep_a_layer_visible(self) -> None:
+        from bitty import cursor_view, virtual_cursor
+
+        source = (ROOT / "bitty" / "cursor_view.py").read_text(encoding="utf-8")
+        self.assertIn("def follow_home(self)", source)
+        self.assertIn("self.hide()", source)
+        self.assertGreaterEqual(virtual_cursor.TICK_MS, 30)
+        self.assertGreaterEqual(cursor_view.CLICK_TICK_MS, 60)
+
+    def test_pinned_cursor_still_follows_bitty(self) -> None:
+        from PySide6.QtCore import QPoint
+
+        from bitty.cursor_view import BittyCursorView
+
+        view = mock.Mock()
+        view._parked = False
+        view.pinned = True
+        view.home = QPoint(30, 40)
+        view.pos.return_value = QPoint(0, 0)
+
+        BittyCursorView.follow_home(view)
+
+        view.nav.snap_to.assert_called_once_with(30, 40)
+        view.move.assert_called_once_with(QPoint(30, 40))
+
+    def test_state_is_written_only_when_it_changes(self) -> None:
+        from PySide6.QtCore import QPoint
+
+        from bitty import app as app_module
+
+        window = app_module.BittyWindow.__new__(app_module.BittyWindow)
+        window.data = dict(state.DEFAULT)
+        window.anchor = QPoint(10, 20)
+        window.roam_paused = False
+        window.theme_key = "auto"
+        window.cursor_style = "clasico"
+        window._state_dirty = True
+        window._last_state_json = ""
+        window._last_save = 0.0
+
+        with mock.patch.object(state, "save") as saver:
+            app_module.BittyWindow._save(window, force=True)
+            app_module.BittyWindow._save(window, force=False)
+            self.assertEqual(saver.call_count, 1)
+            window._state_dirty = True  # marcar sucio sin cambiar nada visible
+            app_module.BittyWindow._save(window, force=False)
+            self.assertEqual(saver.call_count, 1)  # mismo JSON: no se escribe
+            window.anchor = QPoint(11, 20)
+            app_module.BittyWindow._save(window, force=False)
+            self.assertEqual(saver.call_count, 2)
+
+    def test_vision_search_is_bounded_and_cached(self) -> None:
+        from bitty import bridge, icon_finder
+
+        self.assertLessEqual(len(icon_finder.SCALES), 3)
+        self.assertGreater(icon_finder._template.cache_info().maxsize, 0)
+        self.assertLessEqual(bridge.KEEP_CAPTURES, 3)
+        bridge_source = (ROOT / "bitty" / "bridge.py").read_text(encoding="utf-8")
+        self.assertIn("timeout = 5", bridge_source)
 
 
 class CrossPlatformTests(unittest.TestCase):

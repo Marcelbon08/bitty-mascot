@@ -163,6 +163,17 @@ export function moodFromVerdict(verdict: Verdict): Mood {
   return "revisar"
 }
 
+/** Eventos que llegan dozens de veces por segundo durante el streaming. */
+export const HIGH_FREQUENCY_EVENTS = new Set([
+  "session.text.delta",
+  "session.tool.progress",
+])
+
+/** true si el evento puede agruparse en una breve ráfaga sin perder la cara. */
+export function shouldCoalesce(type: string): boolean {
+  return HIGH_FREQUENCY_EVENTS.has(type)
+}
+
 /** Eventos que Bitty escucha. Se usan en TUI y en Desktop. */
 export const BITTY_EVENTS = [
   "session.created",

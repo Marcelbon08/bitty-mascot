@@ -22,7 +22,7 @@ from . import apps, recipes, state
 
 MAX_BODY = 65536
 MAX_COORD = 100000
-KEEP_CAPTURES = 6
+KEEP_CAPTURES = 3
 
 
 class AgreementRequired(Exception):
@@ -68,6 +68,9 @@ class Bridge:
 
         class Handler(BaseHTTPRequestHandler):
             server_version = "BittyBridge/1"
+            # Un cliente local que conecte y no envíe nada no debe retener un
+            # hilo del puente indefinidamente.
+            timeout = 5
 
             def log_message(self, fmt: str, *args) -> None:  # noqa: A002
                 return

@@ -6,6 +6,26 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.5.6] - 2026-11-25 - Bitty consume menos sin perder nada
+
+### Cambiado
+- **Menos despiertes**: la cola del puente y el guardado pasan a un timer propio de 250 ms; el paseo va a 80 ms con pasos de hasta 3 px, y los cambios de cara solo fuerzan un repintado cuando la cara cambia de verdad. El paseo se detiene y se reanuda con el modo gaming.
+- **Cursor aparcado sin capa permanente**: al volver a la espalda de Bitty se oculta la ventana del cursor en lugar de mantener una capa translúcida `TopMost` y reposicionarla con `SetWindowPos` en cada movimiento. Si el cursor está fijado con `> CURSOR: MOSTRAR`, sigue acompañando a la mascota. El sprite se cachea y el clic se anima a 60 ms.
+- **Arranque diferido**: `numpy`, Pillow, `find_icon` y `capture_to_png` se importan solo cuando hay visión. Las fuentes se reutilizan y `state.json` se escribe solo si cambió, como muy cada 5 s (antes cada 2 s).
+- **Streaming agrupado**: `session.text.delta` y `session.tool.progress` se coalescen en ráfagas de 80 ms en TUI y Desktop, sin perder las caras `ESCRIBE`/`TOOL`.
+- **Visión acotada**: la búsqueda del logo recorta la captura con Pillow antes de convertir a `float32`, reutiliza plantillas y FFTS, y prueba tres escalas en vez de cinco. Se guardan como mucho tres capturas.
+
+### Corregido
+- **Paquete más ligero**: se retiran los codecs AVIF/WebP de Pillow, que Bitty nunca abre, y se declaran `hiddenimports` explícitos para que la visión bajo demanda siga funcionando en el ejecutable. El bundle Windows baja de ~139,9 MB a ~132 MB.
+
+### Verificado
+- 40/40 tests Python, 16 tests Node, `typecheck`, build del plugin y build del `.exe` en verde.
+- Medición real alternando v2.5.5 y v2.5.6: arranque en caliente 614–716 ms → 485–587 ms (primera arrancada en frío, 6,7 s → 1,9 s); CPU en reposo 0,078 s/8 s → 0 s; hilos 21 → 9. RAM de reposo y consumo con el chat abierto quedaron dentro del ruido de medición, sin subida sostenida.
+- Captura real del puente: PNG válido de 2560×1440 con los codecs AVIF/WebP retirados; `/launch` abre el Brave real en Gmail. La búsqueda del logo sigue rechazando franjas en blanco y cubre el borde izquierdo de macOS/Linux.
+- Acuerdo → permiso nativo → acción, whitelist de Brave, modo gaming y compatibilidad multiplataforma intactos.
+
+---
+
 ## [2.5.5] - 2026-11-24 - recetas reutilizables y bocadillo que no mueve a Bitty
 
 ### Añadido

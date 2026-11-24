@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.5.5
+> **Windows · macOS · Linux · Fedora** · v2.5.6
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,14 +22,14 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.5.5 |
+| Sistema | Descarga directa v2.5.6 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.5/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.5/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.5/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.5/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.6/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.6/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.6/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.6/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.5.5](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.5)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.5.6](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.6)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI. Los cuatro zips incluyen **[ACUERDO.md](ACUERDO.md)** para leerlo antes de usar la visión o el cursor; en Windows y Linux queda junto a `Bitty.exe`/`Bitty`, y en macOS dentro de `Bitty.app/Contents/Resources`.
 
@@ -84,6 +84,13 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.5.6
+
+- **Menos trabajo en reposo**: el puente y el guardado se atienden a 4 Hz, el paseo a 12,5 Hz con pasos de 3 px, y el cursor aparcado ya no mantiene una ventana translúcida `TopMost` ni hace `SetWindowPos` en cada píxel. La mascota sigue paseando y el cursor sigue volviendo caminando tras actuar.
+- **Arranque más ligero**: NumPy, Pillow y la búsqueda del logo se importan solo cuando Bitty tiene que «ver»; las fuentes se reutilizan y `state.json` se escribe solo si cambió, como muy cada 5 s. El plugin agrupa los deltas de streaming en ráfagas de 80 ms sin perder caras. Medido en caliente: ~0,6 s → ~0,5 s de arranque y 21 → 9 hilos.
+- **Visión más barata y bundle más pequeño**: la búsqueda recorta la captura antes de convertirla, reutiliza plantillas y usa tres escalas en lugar de cinco; se retiraron los codecs AVIF/WebP que Bitty nunca abre. El paquete Windows baja de ~139,9 MB a ~132 MB.
+- **Sin cambios de seguridad**: acuerdo → permiso nativo → acción, whitelist de Brave, modo gaming y compatibilidad Windows/macOS/Linux siguen igual. 40 tests Python, 16 tests Node, `typecheck` y build del plugin en verde.
 
 ## Novedades de v2.5.5
 

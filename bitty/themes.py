@@ -8,10 +8,11 @@ con Pillow, sin necesidad de mantener 21 PNG por tema.
 from __future__ import annotations
 
 import datetime as _dt
-from dataclasses import dataclass, field
-from typing import Callable
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Callable
 
-from PIL import Image, ImageDraw
+if TYPE_CHECKING:  # Pillow se importa solo cuando hay que teñir un sprite.
+    from PIL import Image
 
 # Colores exactos con los que se generaron los sprites base.
 BASE = {
@@ -44,16 +45,20 @@ ORIGINAL_PALETTE = {
 }
 
 
-def _santa_hat(img: Image.Image) -> None:
+def _santa_hat(img: "Image.Image") -> None:
     """Gorro rojo sentado sobre el borde superior de la terminal (y=8..11)."""
+    from PIL import ImageDraw
+
     d = ImageDraw.Draw(img)
     d.polygon([(18, 5), (31, 0), (46, 5)], fill=(200, 48, 48))
     d.rectangle([15, 5, 48, 8], fill=(245, 245, 245))
     d.ellipse([28, -3, 36, 4], fill=(245, 245, 245))
 
 
-def _pumpkin(img: Image.Image) -> None:
+def _pumpkin(img: "Image.Image") -> None:
     """Calabaza pequeña con cara, sobre el borde superior de la terminal."""
+    from PIL import ImageDraw
+
     d = ImageDraw.Draw(img)
     d.ellipse([24, 0, 40, 9], fill=(232, 126, 32))
     d.rectangle([30, -2, 34, 2], fill=(86, 140, 60))
@@ -121,7 +126,7 @@ def resolve_theme(choice: str) -> Theme:
     return THEMES.get(choice, THEMES["original"])
 
 
-def tint_sprite(image: Image.Image, theme: Theme) -> Image.Image:
+def tint_sprite(image: "Image.Image", theme: Theme) -> "Image.Image":
     """Recoloriza un sprite base y le pone el accesorio del tema.
 
     Se cachea desde sprites.py; aquí solo se hace el trabajo puro.

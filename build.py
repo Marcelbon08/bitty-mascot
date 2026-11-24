@@ -33,6 +33,10 @@ UNUSED_QT_LIBS = [
     "Qt6Quick", "Qt6VirtualKeyboard",
 ]
 
+# Bitty solo abre PNG. Los codecs AVIF/WebP de Pillow son los .pyd/.so más
+# grandes del bundle y nunca se usan.
+UNUSED_PIL_CODECS = ("_avif", "_webp")
+
 
 def prune_unused_qt(out: Path) -> list[str]:
     """Quita bibliotecas Qt que Bitty nunca carga. Devuelve lo eliminado."""
@@ -50,6 +54,30 @@ def prune_unused_qt(out: Path) -> list[str]:
             patterns = (
                 [f"{lib}.dll"] if sys.platform == "win32"
                 else [f"lib{lib}.so*"]
+            )
+            for pattern in patterns:
+                for path in folder.glob(pattern):
+                    path.unlink()
+                    removed.append(path.name)
+    return sorted(set(removed))
+
+
+def prune_unused_pil(out: Path) -> list[str]:
+    """Quita codecs de imagen que Bitty nunca abre. Devuelve lo eliminado."""
+    removed: list[str] = []
+    folders = [out / "_internal" / "PIL", out / "PIL"]
+    if sys.platform == "darwin":
+        folders += [
+            out / "Contents" / "Resources" / "PIL",
+            out / "Contents" / "MacOS" / "PIL",
+        ]
+    for folder in folders:
+        if not folder.is_dir():
+            continue
+        for codec in UNUSED_PIL_CODECS:
+            patterns = (
+                [f"{codec}*.pyd"] if sys.platform == "win32"
+                else [f"{codec}*.so"]
             )
             for pattern in patterns:
                 for path in folder.glob(pattern):
@@ -103,7 +131,15 @@ def main() -> int:
         cmd += ["--add-data", f"{ICONS}{SEP}bitty/resources/icons"]
     if ICON.exists() and sys.platform == "win32":
         cmd += ["--icon", str(ICON)]
-    cmd += ["--hidden-import", "pynput", str(ROOT / "run_bitty.py")]
+    # NumPy y Pillow se importan de forma diferida en el código, pero deben
+    # seguir incluidos: la visión bajo demanda los necesita más adelante.
+    cmd += [
+        "--hidden-import", "pynput",
+        "--hidden-import", "numpy",
+        "--hidden-import", "PIL.Image",
+        "--hidden-import", "PIL.ImageDraw",
+        str(ROOT / "run_bitty.py"),
+    ]
     for module in UNUSED_MODULES:
         cmd += ["--exclude-module", module]
 
@@ -128,6 +164,9 @@ def main() -> int:
     removed = prune_unused_qt(out)
     if removed:
         print("Bibliotecas Qt retiradas del bundle: " + ", ".join(removed))
+    codecs = prune_unused_pil(out)
+    if codecs:
+        print("Codecs de imagen retirados del bundle: " + ", ".join(codecs))
     if copy_agreement(out):
         print("Acuerdo incluido en el paquete.")
     print(f"\nListo: {out}")

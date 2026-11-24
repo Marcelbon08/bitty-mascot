@@ -76,7 +76,7 @@ Para «ver el escritorio» (incluido tu Opera real) Bitty ya no depende solo del
 
 Cuando la sesión habla de una web, el aviso es contextual: si el MCP ya está disponible, Bitty ofrece mirar la página con esas herramientas; si no lo está, explica que hay que instalarlo con permiso. Nunca instala nada por su cuenta.
 
-## Cursor, visión de pantalla y recetas (v2.5.5)
+## Cursor, visión de pantalla y recetas (v2.5.6)
 
 Antes de cualquiera de estas herramientas, Bitty muestra su **acuerdo de 4 líneas** (`> ACUERDO: LEER` para volver a verlo). El botón `ACEPTO` se activa solo después de 6 s; si rechazas, no se pide permiso, no se mira la pantalla y no se mueve nada. Después viene el permiso nativo de OpenCode, que sigue siendo **cada vez**. El mismo texto se reparte en los cuatro paquetes como `ACUERDO.md` y el instalador de Fedora lo muestra al instalar.
 

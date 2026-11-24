@@ -9,10 +9,10 @@ from __future__ import annotations
 import math
 import re
 
-# Un tick cada 20 ms (50 veces por segundo) da un movimiento fluido.
-TICK_MS = 20
-# Máximo de píxeles avanzados por tick y fracción de la distancia restante.
-STEP_PX = 16.0
+# 30 Hz sigue viéndose fluido y recorta un 40 % los despiertes del cursor.
+TICK_MS = 32
+# Paso mayor para conservar la velocidad del movimiento con menos ticks.
+STEP_PX = 22.0
 EASE = 0.22
 # Distancia a partir de la cual se considera llegado.
 ARRIVE_PX = 0.8

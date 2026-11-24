@@ -8,6 +8,7 @@ fs.writeFileSync(path.join(build, "package.json"), '{"type":"commonjs"}\n')
 const { CAPACITIES, CAPACITY_IDS, capacityFromText, needsBrowser } = require(path.join(build, "capacities.js"))
 const { installCapacity } = require(path.join(build, "install.js"))
 const { scanProject, scanToText } = require(path.join(build, "scan.js"))
+const { shouldCoalesce } = require(path.join(build, "faces.js"))
 const { opinionSourceLabel, pushHistory } = require(path.join(build, "opinion.js"))
 const { localOpinion, opinionFromModel } = require(path.join(build, "opina.js"))
 const { safeSessionId, safeAgent, safeDirectory } = require(path.join(build, "validate.js"))
@@ -188,6 +189,18 @@ async function main() {
     forceAsk(other)
     assert.equal(other.effect, undefined)
     assert.equal(other.message, undefined)
+  })
+
+  check("streaming_agrupado_sin_perder_caras", () => {
+    assert.equal(shouldCoalesce("session.text.delta"), true)
+    assert.equal(shouldCoalesce("session.tool.progress"), true)
+    assert.equal(shouldCoalesce("session.text.started"), false)
+    assert.equal(shouldCoalesce("session.idle"), false)
+    for (const file of ["src/tui.tsx", "src/gui.tsx"]) {
+      const source = fs.readFileSync(path.join(__dirname, "..", file), "utf8")
+      assert.match(source, /shouldCoalesce\(type\)/, file)
+      assert.match(source, /setTimeout\(\(\) =>/, file)
+    }
   })
 
   check("receta_solo_pasos_sin_secretos", () => {
