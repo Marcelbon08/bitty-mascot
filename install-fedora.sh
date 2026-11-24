@@ -13,10 +13,22 @@ if [ ! -x "$ROOT/Bitty/Bitty" ]; then
   exit 1
 fi
 
+if [ -f "$ROOT/ACUERDO.md" ]; then
+  echo "Acuerdo de Bitty (léelo antes de mirar la pantalla o mover el cursor):"
+  cat "$ROOT/ACUERDO.md"
+  echo
+  sleep 3
+else
+  echo "Aviso: el paquete no incluye ACUERDO.md." >&2
+fi
+
 echo "Instalando Bitty para Fedora en $TARGET"
 mkdir -p "$TARGET"
 cp -R "$ROOT/Bitty" "$TARGET/"
 chmod +x "$TARGET/Bitty/Bitty"
+if [ -f "$ROOT/ACUERDO.md" ]; then
+  cp "$ROOT/ACUERDO.md" "$TARGET/ACUERDO.md"
+fi
 
 # El agente de OpenCode reconoce a Marcelbon por su nombre.
 AGENT="${HOME}/.config/opencode/agents/bitty.md"
@@ -47,4 +59,7 @@ EOF
 fi
 
 echo "Listo, Marcelbon: Bitty te reconoce en OpenCode y en el escritorio."
+if [ -f "$TARGET/ACUERDO.md" ]; then
+  echo "Acuerdo disponible en $TARGET/ACUERDO.md"
+fi
 echo "Si usas Wayland, los atajos globales pueden necesitar permisos adicionales."

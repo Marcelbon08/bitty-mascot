@@ -12,6 +12,7 @@ import time
 import types
 import unittest
 from pathlib import Path
+from typing import Callable
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -190,7 +191,9 @@ class BridgeTests(unittest.TestCase):
 
                     headers = {"Content-Type": "application/json"}
                     client.request("POST", "/cursor", "{}", {**headers, "X-Bitty-Token": "incorrecto"})
-                    self.assertEqual(client.getresponse().status, 401)
+                    response = client.getresponse()
+                    self.assertEqual(response.status, 401)
+                    response.read()
 
                     auth = {**headers, "X-Bitty-Token": config["token"]}
                     client.request("POST", "/cursor", '{"x": 12, "y": -4}', auth)
@@ -199,7 +202,9 @@ class BridgeTests(unittest.TestCase):
                     self.assertEqual(calls, [(12, -4)])
 
                     client.request("POST", "/cursor", '{"x": 1.5, "y": 2}', auth)
-                    self.assertEqual(client.getresponse().status, 400)
+                    response = client.getresponse()
+                    self.assertEqual(response.status, 400)
+                    response.read()
 
                     fake = {"path": str(Path(tmp) / "captura.png"), "uri": "file:///captura.png",
                             "width": 800, "height": 600, "screens": 1}
@@ -243,8 +248,78 @@ class BridgeTests(unittest.TestCase):
 
                     # Nunca se abre un comando arbitrario aunque venga con token.
                     client.request("POST", "/click", '{"x": 1, "y": 2, "open": "cmd /c calc"}', auth)
-                    self.assertEqual(client.getresponse().status, 400)
+                    response = client.getresponse()
+                    self.assertEqual(response.status, 400)
+                    response.read()
                     self.assertEqual(clicks, [(10, 20, "brave")])
+                    client.close()
+                finally:
+                    server.stop()
+
+    def test_direct_calls_cannot_bypass_agreement(self) -> None:
+        import http.client
+
+        from bitty import bridge
+
+        with tempfile.TemporaryDirectory() as tmp:
+            agreed = [False]
+            calls: list[str] = []
+            fake = {"path": str(Path(tmp) / "captura.png"), "uri": "file:///captura.png",
+                    "width": 800, "height": 600, "screens": 1}
+            screen_stub = types.ModuleType("bitty.screen")
+            screen_stub.capture_to_png = lambda destination: fake
+
+            def on_cursor(x: int, y: int) -> bool:
+                calls.append("cursor")
+                return True
+
+            def on_click(x: int, y: int, app: str) -> bool:
+                calls.append("click")
+                return True
+
+            def on_capture(work: Callable[[], None]) -> bool:
+                calls.append("capture")
+                work()
+                return True
+
+            with mock.patch.object(bridge.state, "config_dir", return_value=Path(tmp)), \
+                 mock.patch.dict(sys.modules, {"bitty.screen": screen_stub}):
+                server = bridge.Bridge(
+                    on_cursor, on_capture, on_click,
+                    on_gate=lambda: agreed[0],
+                )
+                server.start()
+                try:
+                    config = json.loads((Path(tmp) / "bridge.json").read_text(encoding="utf-8"))
+                    auth = {
+                        "Content-Type": "application/json",
+                        "X-Bitty-Token": config["token"],
+                    }
+                    client = http.client.HTTPConnection("127.0.0.1", server.port, timeout=5)
+                    for endpoint, body in (
+                        ("/cursor", '{"x": 1, "y": 2}'),
+                        ("/click", '{"x": 1, "y": 2, "open": "brave"}'),
+                        ("/capture", "{}"),
+                    ):
+                        client.request("POST", endpoint, body, auth)
+                        response = client.getresponse()
+                        payload = json.loads(response.read())
+                        self.assertEqual(response.status, 403)
+                        self.assertEqual(payload["code"], "agreement_required")
+
+                    agreed[0] = True
+                    for endpoint, body in (
+                        ("/cursor", '{"x": 1, "y": 2}'),
+                        ("/click", '{"x": 1, "y": 2, "open": "brave"}'),
+                        ("/capture", "{}"),
+                    ):
+                        client.request("POST", endpoint, body, auth)
+                        response = client.getresponse()
+                        self.assertEqual(response.status, 200)
+                        response.read()
+                    # Antes del acuerdo no se llamó a ninguna acción; solo
+                    # después de aceptar se permiten cursor, clic y captura.
+                    self.assertEqual(calls, ["cursor", "click", "capture"])
                     client.close()
                 finally:
                     server.stop()
@@ -376,6 +451,36 @@ class CursorSpriteTests(unittest.TestCase):
 
 
 class AgreementTests(unittest.TestCase):
+    def test_agreement_file_matches_the_dialog(self) -> None:
+        from bitty import agreement
+
+        text = (ROOT / "ACUERDO.md").read_text(encoding="utf-8")
+        for line in agreement.AGREEMENT_LINES:
+            self.assertIn(line, text)
+
+    def test_build_copies_agreement_into_package(self) -> None:
+        import build
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "Bitty"
+            out.mkdir()
+            self.assertTrue(build.copy_agreement(out))
+            self.assertEqual(
+                (out / "ACUERDO.md").read_text(encoding="utf-8"),
+                (ROOT / "ACUERDO.md").read_text(encoding="utf-8"),
+            )
+
+    def test_installers_ship_and_show_agreement(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "build.yml").read_text(encoding="utf-8")
+        self.assertIn("cp ACUERDO.md package/", workflow)
+        self.assertIn(
+            "zip -r ../Bitty-Fedora.zip Bitty agent install-fedora.sh ACUERDO.md",
+            workflow,
+        )
+        installer = (ROOT / "install-fedora.sh").read_text(encoding="utf-8")
+        self.assertIn('cat "$ROOT/ACUERDO.md"', installer)
+        self.assertIn('cp "$ROOT/ACUERDO.md" "$TARGET/ACUERDO.md"', installer)
+
     def test_agreement_is_short_and_persisted(self) -> None:
         from bitty import agreement, state
 
@@ -412,6 +517,11 @@ class AgreementTests(unittest.TestCase):
                         "X-Bitty-Token": config["token"],
                     }
                     client = http.client.HTTPConnection("127.0.0.1", server.port, timeout=5)
+                    client.request("POST", "/agreement", "{}", {"Content-Type": "application/json"})
+                    response = client.getresponse()
+                    self.assertEqual(response.status, 401)
+                    response.read()
+
                     client.request("POST", "/agreement", "{}", auth)
                     response = client.getresponse()
                     payload = json.loads(response.read())
@@ -425,6 +535,26 @@ class AgreementTests(unittest.TestCase):
                     client.close()
                 finally:
                     server.stop()
+
+    def test_gate_queues_agreement_with_a_valid_callback(self) -> None:
+        from bitty.app import BittyWindow
+
+        window = BittyWindow.__new__(BittyWindow)
+        window.data = {"agreement_version": 0}
+        window._agreement_pending = False
+        window.bridge_queue = []
+        window._ask_agreement = mock.Mock(return_value=True)
+
+        self.assertFalse(window._gate_action())
+        kind, payload = window.bridge_queue[0]
+        self.assertEqual(kind, "agreement")
+        self.assertEqual(len(payload), 1)
+        self.assertTrue(callable(payload[0]))
+        payload[0](True)
+
+        # Una segunda llamada no abre otro diálogo mientras hay uno pendiente.
+        self.assertFalse(window._gate_action())
+        self.assertEqual(len(window.bridge_queue), 1)
 
 
 class CrossPlatformTests(unittest.TestCase):

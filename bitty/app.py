@@ -178,6 +178,7 @@ class BittyWindow(QWidget):
         self.bridge = Bridge(
             self._queue_cursor, self._queue_capture, self._queue_click,
             on_agreement=self._queue_agreement,
+            on_gate=self._gate_action,
         )
         self.bridge_action.setChecked(bool(self.data.get("bridge_enabled", True)))
         if self.bridge_action.isChecked():
@@ -767,7 +768,9 @@ class BittyWindow(QWidget):
             return True
         if not self._agreement_pending:
             self._agreement_pending = True
-            self.bridge_queue.append(("agreement", ()))
+            # El item debe llevar un callback: _apply_bridge_queue lo llama
+            # con el resultado de _ask_agreement para despertar a quien espera.
+            self.bridge_queue.append(("agreement", (lambda accepted: None,)))
         return False
 
     # ------------------------------------------------------- puente local
@@ -868,7 +871,7 @@ class BittyWindow(QWidget):
                 continue
             if kind == "agreement":
                 self._agreement_pending = False
-                work = payload[0]
+                work = payload[0] if payload else (lambda accepted: None)
                 work(self._ask_agreement())
                 continue
             if kind == "cursor":

@@ -142,8 +142,9 @@ jobs:
           cp -R dist/Bitty/. package/Bitty/
           cp agent/bitty.md package/agent/bitty.md
           cp install-fedora.sh package/
+          cp ACUERDO.md package/
           cd package
-          zip -r ../Bitty-Fedora.zip Bitty agent install-fedora.sh
+          zip -r ../Bitty-Fedora.zip Bitty agent install-fedora.sh ACUERDO.md
 
       - uses: actions/upload-artifact@v4
         with:

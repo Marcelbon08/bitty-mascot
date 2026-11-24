@@ -42,11 +42,16 @@ class Bridge:
         on_capture: Callable[[Callable[[], None]], None] | None = None,
         on_click: Callable[[int, int, str], None] | None = None,
         on_agreement: Callable[[Callable[[bool], None]], None] | None = None,
+        on_gate: Callable[[], bool] | None = None,
     ) -> None:
         self.on_cursor = on_cursor
         self.on_capture = on_capture
         self.on_click = on_click
         self.on_agreement = on_agreement
+        # Puerta central: la llaman /cursor, /click y /capture antes de tocar
+        # nada. Así no basta con llamar al puente directamente saltándose el
+        # plugin: sin acuerdo aceptado, la acción se corta aquí.
+        self.on_gate = on_gate
         self.token = secrets.token_urlsafe(32)
         self.port = 0
         self.server: ThreadingHTTPServer | None = None
@@ -112,6 +117,16 @@ class Bridge:
                         self._reply(200, {"ok": True, "agreement": accepted})
                     return
 
+                # El plugin ya llama a /agreement antes de pedir permiso, pero
+                # el puente no puede fiarse de eso: cualquier proceso local con
+                # el token debe pasar también esta puerta.
+                if bridge.on_gate and bridge.on_gate() is False:
+                    self._reply(403, {
+                        "error": "acuerdo pendiente: lee y acepta en Bitty",
+                        "code": "agreement_required",
+                    })
+                    return
+
                 if self.path == "/cursor":
                     x, y = body.get("x"), body.get("y")
                     if (
@@ -155,19 +170,13 @@ class Bridge:
                     return
 
                 if self.path == "/capture":
-                    if bridge.on_capture:
-                        try:
-                            allowed = bridge.on_capture()
-                        except Exception:
-                            allowed = None
-                        if allowed is False:
-                            self._reply(403, {
-                                "error": "acuerdo pendiente: lee y acepta en Bitty",
-                                "code": "agreement_required",
-                            })
-                            return
                     try:
                         self._reply(200, bridge.capture())
+                    except AgreementRequired:
+                        self._reply(403, {
+                            "error": "acuerdo pendiente: lee y acepta en Bitty",
+                            "code": "agreement_required",
+                        })
                     except Exception as exc:
                         self._reply(500, {"error": str(exc)[:200]})
                     return
@@ -253,7 +262,11 @@ class Bridge:
                 done.set()
 
         if self.on_capture:
-            self.on_capture(work)
+            if self.on_capture(work) is False:
+                box["error"] = AgreementRequired(
+                    "Acuerdo rechazado en Bitty: no he mirado ni actuado."
+                )
+                done.set()
         else:
             work()
         if not done.wait(timeout=20):

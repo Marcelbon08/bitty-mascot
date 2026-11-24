@@ -260,6 +260,7 @@ async function main() {
 
   check("puente_url_y_token", () => {
     const conn = { port: 4321, token: "t".repeat(40), pid: 7 }
+    assert.equal(bridgeUrl(conn, "/agreement"), "http://127.0.0.1:4321/agreement")
     assert.equal(bridgeUrl(conn, "/cursor"), "http://127.0.0.1:4321/cursor")
     assert.equal(bridgeUrl(conn, "/click"), "http://127.0.0.1:4321/click")
     assert.equal(validateConnection(conn).port, 4321)

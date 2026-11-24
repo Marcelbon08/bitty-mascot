@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+AGREEMENT = ROOT / "ACUERDO.md"
 ICON = ROOT / "bitty" / "resources" / "bitty.ico"
 SPRITES = ROOT / "bitty" / "resources" / "sprites"
 ICONS = ROOT / "bitty" / "resources" / "icons"
@@ -55,6 +56,19 @@ def prune_unused_qt(out: Path) -> list[str]:
                     path.unlink()
                     removed.append(path.name)
     return sorted(set(removed))
+
+
+def copy_agreement(out: Path) -> bool:
+    """Copia el acuerdo dentro del paquete para que se pueda leer al instalar."""
+    if not AGREEMENT.is_file():
+        return False
+    if sys.platform == "darwin":
+        destination = out / "Contents" / "Resources" / "ACUERDO.md"
+    else:
+        destination = out / "ACUERDO.md"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(AGREEMENT, destination)
+    return True
 
 
 UNUSED_MODULES = [
@@ -114,6 +128,8 @@ def main() -> int:
     removed = prune_unused_qt(out)
     if removed:
         print("Bibliotecas Qt retiradas del bundle: " + ", ".join(removed))
+    if copy_agreement(out):
+        print("Acuerdo incluido en el paquete.")
     print(f"\nListo: {out}")
     return 0
 

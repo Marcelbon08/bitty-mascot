@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.5.3
+> **Windows · macOS · Linux · Fedora** · v2.5.4
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,18 +22,18 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.5.3 |
+| Sistema | Descarga directa v2.5.4 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.3/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.3/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.3/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.3/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.4/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.4/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.4/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.4/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.5.3](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.3)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.5.4](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.4)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
-Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI.
+Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI. Los cuatro zips incluyen **[ACUERDO.md](ACUERDO.md)** para leerlo antes de usar la visión o el cursor; en Windows y Linux queda junto a `Bitty.exe`/`Bitty`, y en macOS dentro de `Bitty.app/Contents/Resources`.
 
-El paquete de Fedora se compila dentro de un contenedor `fedora:latest`, no se reutiliza el de Ubuntu: así las bibliotecas Qt encajan con el sistema. El zip incluye `Bitty/`, `agent/bitty.md` e `install-fedora.sh`. El instalador copia la mascota a `~/.local/share/BittyMascot`, instala el agente en `~/.config/opencode/agents/bitty.md` y configura el arranque con `systemd --user` (usa `--no-autostart` si no lo quieres). En Wayland los atajos globales pueden necesitar permisos adicionales.
+El paquete de Fedora se compila dentro de un contenedor `fedora:latest`, no se reutiliza el de Ubuntu: así las bibliotecas Qt encajan con el sistema. El zip incluye `Bitty/`, `agent/bitty.md`, `install-fedora.sh` y `ACUERDO.md`. El instalador **muestra el acuerdo durante la instalación**, espera 3 segundos y lo copia a `~/.local/share/BittyMascot/ACUERDO.md`; también copia la mascota a `~/.local/share/BittyMascot`, instala el agente en `~/.config/opencode/agents/bitty.md` y configura el arranque con `systemd --user` (usa `--no-autostart` si no lo quieres). En Wayland los atajos globales pueden necesitar permisos adicionales.
 
 También puedes [descargar el código](https://github.com/Marcelbon08/bitty-mascot/archive/refs/heads/main.zip) e instalar desde fuente con Python.
 
@@ -84,6 +84,12 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.5.4
+
+- **Acuerdo en la instalación**: los cuatro zips incluyen `ACUERDO.md` con las 4 líneas. El instalador de Fedora lo muestra y lo copia junto a la mascota; en los demás sistemas queda dentro del paquete para leerlo antes de dar permisos.
+- **Puerta de seguridad reforzada**: `/cursor`, `/click` y `/capture` comprueban el acuerdo en el propio puente, aunque otra app local conozca el token. Antes, `/capture` podía eludir la comprobación por un callback mal llamado; ya está corregido y cubierto por un test.
+- **Pruebas ampliadas**: 29 tests Python (antes 24) y 15 tests Node, con `typecheck` y build en verde.
 
 ## Novedades de v2.5.3
 

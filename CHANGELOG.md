@@ -6,6 +6,22 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.5.4] - 2026-11-24 - acuerdo en la instalación y puerta reforzada
+
+### Añadido
+- **`ACUERDO.md` en los cuatro paquetes**: `build.py` lo copia junto al binario (o en `Contents/Resources` en macOS) y el workflow lo añade al zip de Fedora. `install-fedora.sh` lo muestra al instalar, espera 3 s y lo copia a `~/.local/share/BittyMascot/ACUERDO.md`.
+- **Puerta central del acuerdo en el puente** (`on_gate`): `/cursor`, `/click` y `/capture` la ejecutan antes de cualquier acción, sin depender de que el plugin haya llamado antes a `/agreement`. Los callbacks siguen comprobándolo como segunda capa.
+
+### Corregido
+- **Fallaba la comprobación de `/capture`**: se llamaba a `on_capture()` sin el callback que espera; la excepción se tragaba y una petición directa con token podía capturar sin acuerdo. Ahora `Bridge.capture()` pasa el trabajo correctamente y convierte un rechazo en HTTP 403.
+- **El acuerdo no aparecía en llamadas directas**: `_gate_action` encolaba el diálogo sin callback y `_apply_bridge_queue` fallaba al abrirlo. La acción se bloqueaba, pero Bitty no mostraba el acuerdo; ya se encola bien y hay un test que lo verifica.
+- **Tests HTTP estables en Windows**: se consumen todas las respuestas (401/400/403) para reutilizar la conexión sin `ConnectionAbortedError`.
+
+### Verificado
+- 29/29 tests Python, 15 tests Node, `typecheck` y build en verde. `ACUERDO.md` coincide con las 4 líneas del diálogo; se comprueba que se copia al paquete, que el workflow lo incluye en el zip de Fedora y que el instalador lo muestra y lo copia.
+
+---
+
 ## [2.5.3] - 2026-11-24 - acuerdo breve antes de usar visión o cursor
 
 ### Añadido
