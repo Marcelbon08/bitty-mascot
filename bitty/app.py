@@ -140,7 +140,9 @@ class BittyWindow(QWidget):
             self.roam_center = QPoint(self.anchor)
             self.roam_target = QPoint(self.anchor)
 
-        self.cursor_view = BittyCursorView(self.theme, self)
+        # Sin padre: si fuera ventana hija de Bitty, Windows la mantendría
+        # siempre por encima de su dueño y no podría esconderse detrás.
+        self.cursor_view = BittyCursorView(self.theme)
         self.cursor_view.set_home(self.anchor)
         self.cursor_view.go_to(self.anchor.x() + 90, self.anchor.y() + 70)
         # El cursor solo aparece cuando Bitty tiene que actuar.
@@ -852,6 +854,13 @@ class BittyWindow(QWidget):
         y = max(rect.top(), min(y, rect.bottom() - self.height()))
         self.anchor = QPoint(x + off_x, y + off_y)
         self.cursor_view.set_home(self.anchor)
+        # Si está aparcado, sigue a Bitty aunque la mascota se pasee.
+        if not (
+            self.cursor_view.nav.moving
+            or self.cursor_view.pending_click
+            or self.cursor_view.returning
+        ):
+            self.cursor_view.park()
         self.move(x, y)
 
     def _sprite_y(self) -> int:

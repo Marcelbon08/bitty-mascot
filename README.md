@@ -96,7 +96,7 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 ## Novedades de v2.4.7
 
 - **Cursor virtual de Bitty** (mejora 12): hay un segundo puntero pixelado además del tuyo. Recibe coordenadas y se desplaza hacia ellas interpolando un paso cada 20 ms, con desaceleración suave, hasta llegar. Se ve fluido y es multimonitor.
-- **No mueve tu ratón**: el cursor de Bitty está **oculto detrás de la mascota** y solo sale cuando Bitty va a actuar; después vuelve a esconderse. Su ventana es transparente a los clics (`click-through`): el gesto es visible pero no llega al escritorio, no escribe teclas y no mueve tu puntero. Bitty sigue sin interrumpirte.
+- **No mueve tu ratón**: el cursor de Bitty está **aparcado detrás de la mascota**, con estética de terminal OpenCode (marco oscuro, acento del tema y brillo de prompt). Sale cuando Bitty va a actuar y, en lugar de desaparecer, **vuelve caminando a la espalda de Bitty** y queda ahí tapado por él. Su ventana es transparente a los clics (`click-through`): el gesto es visible pero no llega al escritorio, no escribe teclas y no mueve tu puntero.
 - **Cómo mandarlo**: escribe `/cursor 500,300` (o `/cursor 500 300`) en el bocadillo; `/cursor demo` activa una ruta aleatoria cerca de la mascota y `/cursor para` la detiene. También hay entradas en el menú derecho: **> CURSOR: RUTA ALEATORIA**, **> CURSOR: IR AL CENTRO** y **> CURSOR: OCULTAR/MOSTRAR**.
 - Sigue siendo una sugerencia visual: señala, no actúa. Para editar archivos o pulsar botones reales, OpenCode ya tiene sus propias herramientas y permisos.
 

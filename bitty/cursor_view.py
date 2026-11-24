@@ -1,12 +1,15 @@
-"""Segundo cursor de Bitty: ventana transparente, siempre visible y sin clics.
+"""Segundo cursor de Bitty: puntero pixelado estilo terminal, sin clics.
 
-El ratón del usuario no se toca. Esta ventana solo dibuja un puntero pixelado
-que se desplaza hacia las coordenadas que se le dan, interpolando cada 20 ms.
+El ratón del usuario no se toca. Bitty saca este cursor cuando va a actuar,
+hace su gesto y vuelve caminando hasta detrás de la mascota, donde queda
+aparcado (no desaparece; se esconde en la espalda de Bitty).
 """
 
 from __future__ import annotations
 
+import ctypes
 import random
+import sys
 import time
 from typing import Callable
 
@@ -17,23 +20,26 @@ from PySide6.QtWidgets import QWidget
 from .themes import Theme
 from .virtual_cursor import TICK_MS, CursorNavigator, clamp_point
 
-# Puntero pixelado de 12 x 15. X = borde, f = relleno, h = brillo.
+# Puntero de 14 x 16 con estética Bitty/OpenCode: marco oscuro de terminal,
+# cuerpo con el acento del tema y un trazo brillante que recuerda un prompt.
+# X = marco (bg), f = cuerpo (accent), h = brillo/prompt (bright).
 ARROW = (
-    "h...........",
-    "Xh..........",
-    "Xfh.........",
-    "Xffh........",
-    "Xfffh.......",
-    "Xffffh......",
-    "Xfffffh.....",
-    "Xffffffh....",
-    "Xffffffffh..",
-    "XffffffffXX.",
-    "XffXffffX...",
-    "XfX.XfffX...",
-    "XX...XffX...",
-    "X.....XfX...",
-    ".......XX...",
+    "h.............",
+    "Xh............",
+    "Xfh...........",
+    "Xffh..........",
+    "Xfffh.........",
+    "Xffffh........",
+    "Xfffffh.......",
+    "Xffffffh......",
+    "Xfffffffh.....",
+    "XffffXffffXh..",
+    "XfffXhXffffXh.",
+    "XffXhhXffffXh.",
+    "XfXhhhXffffXh.",
+    "XX.hh.XffffXh.",
+    "....h...XffXXh",
+    ".........XXXX.",
 )
 SCALE = 2
 # Margen suficiente para dibujar el anillo del clic sin recortarlo.
@@ -85,9 +91,8 @@ class BittyCursorView(QWidget):
         self.click_started = 0.0
         self.pending_click = False
         self.click_callback: Callable[[], None] | None = None
-        self.park_timer = QTimer(self)
-        self.park_timer.setSingleShot(True)
-        self.park_timer.timeout.connect(self.park)
+        # Tras el clic, el cursor vuelve hacia la mascota en lugar de ocultarse.
+        self.returning = False
 
     # ------------------------------------------------------------ posición
     @staticmethod
@@ -109,8 +114,9 @@ class BittyCursorView(QWidget):
         # cómo Bitty «saca» su ratón para hacer la acción.
         self.nav.go_to(cx, cy)
         if self.visible:
+            # No cambiamos el Z aquí: durante la vuelta debe seguir visible
+            # hasta llegar a la espalda de Bitty; el orden se ajusta al terminar.
             self.show()
-            self.raise_()
         self.move_timer.start()
 
     def center(self) -> None:
@@ -126,34 +132,75 @@ class BittyCursorView(QWidget):
             self.move_timer.stop()
             if self.pending_click:
                 self._begin_click()
+            elif self.returning:
+                self._finish_return()
 
     # ---------------------------------------------------------------- clic
     def click(self, x: int, y: int, on_clicked: Callable[[], None] | None = None) -> None:
-        """Aparece, llega a (x, y) y hace su clic visual. Luego se aparca."""
+        """Sale de detrás de Bitty, hace clic en (x, y) y vuelve con él."""
         self.visible = True
+        self.returning = False
         self.click_callback = on_clicked
-        self.park_timer.stop()
+        self._set_z(True)
         self.go_to(x, y)
         self.pending_click = True
         if not self.nav.moving:
             self._begin_click()
 
     def park(self) -> None:
-        """Vuelve detrás de la mascota. Si no está fijado, desaparece."""
-        self.park_timer.stop()
+        """Se coloca detrás de la mascota: sigue ahí, pero lo tapa Bitty."""
         self.click_timer.stop()
         self.click_started = 0.0
         self.pending_click = False
+        self.returning = False
         self.click_callback = None
         self.move_timer.stop()
         self.nav.snap_to(self.home.x(), self.home.y())
         self.move(self.home.x(), self.home.y())
-        self.visible = self.pinned
-        if self.pinned:
-            self.show()
-            self.raise_()
-        else:
-            self.hide()
+        self.visible = True
+        self.show()
+        self._tuck_behind()
+
+    def _set_z(self, on_top: bool) -> None:
+        """Coloca el cursor sobre Bitty (acción) o bajo él (aparcado)."""
+        if sys.platform != "win32":
+            if on_top:
+                self.raise_()
+            else:
+                self.lower()
+            return
+        # Qt no pone WS_EX_TOPMOST en esta ventana Tool aunque lo pidamos.
+        # HWND_TOPMOST (-1) lo eleva sobre Bitty durante la acción;
+        # HWND_NOTOPMOST (-2) lo deja debajo del sprite al aparcarlo.
+        flags = 0x0001 | 0x0002 | 0x0010  # NOSIZE | NOMOVE | NOACTIVATE
+        user32 = ctypes.windll.user32
+        user32.SetWindowPos.argtypes = [
+            ctypes.c_void_p, ctypes.c_void_p,
+            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+            ctypes.c_uint,
+        ]
+        user32.SetWindowPos.restype = ctypes.c_bool
+        user32.SetWindowPos(
+            ctypes.c_void_p(int(self.winId())),
+            ctypes.c_void_p(-1 if on_top else -2),
+            0, 0, 0, 0, flags,
+        )
+
+    def _tuck_behind(self) -> None:
+        """Deja el cursor vivo pero por debajo de la ventana de Bitty."""
+        parent = self.parentWidget()
+        if parent is not None:
+            parent.raise_()
+        self._set_z(False)
+
+    def _start_return(self) -> None:
+        """Inicia el camino de vuelta hacia la espalda de Bitty."""
+        self.returning = True
+        self.go_to(self.home.x(), self.home.y())
+
+    def _finish_return(self) -> None:
+        self.returning = False
+        self.park()
 
     def _begin_click(self) -> None:
         self.pending_click = False
@@ -166,14 +213,15 @@ class BittyCursorView(QWidget):
                 callback()
             except Exception:
                 pass
-        # El cursor solo se muestra durante la acción; después se oculta.
-        self.park_timer.start(CLICK_MS + 700)
 
     def _click_tick(self) -> None:
         if time.monotonic() - self.click_started >= CLICK_MS / 1000:
             self.click_timer.stop()
             self.click_started = 0.0
-        self.update()
+            self.update()
+            self._start_return()
+        else:
+            self.update()
 
     # --------------------------------------------------------------- modes
     def toggle_demo(self) -> bool:
@@ -182,7 +230,7 @@ class BittyCursorView(QWidget):
         if self.demo:
             self.visible = True
             self.show()
-            self.raise_()
+            self._set_z(True)
             self._new_demo_point()
             self.demo_timer.start()
         else:
@@ -206,21 +254,23 @@ class BittyCursorView(QWidget):
         self.visible = shown
         if shown:
             self.show()
-            self.raise_()
+            self._set_z(True)
             self.move_timer.start()
         else:
             self.stop_demo()
             self.move_timer.stop()
-            self.park()
+            self.visible = False
+            self.hide()
 
     def stop(self) -> None:
         self.demo_timer.stop()
         self.move_timer.stop()
         self.click_timer.stop()
-        self.park_timer.stop()
         self.click_started = 0.0
         self.pending_click = False
+        self.returning = False
         self.click_callback = None
+        self.visible = False
         self.hide()
 
     def set_theme(self, theme: Theme) -> None:
@@ -231,7 +281,9 @@ class BittyCursorView(QWidget):
     def paintEvent(self, event) -> None:  # noqa: N802
         palette = self.theme.palette
         colors = {
-            "X": QColor(0, 0, 0),
+            # Marco del mismo negro que la terminal de Bitty; el cuerpo toma
+            # el acento del tema (azul, rojo en Navidad, naranja en Halloween).
+            "X": QColor(*palette["bg"]),
             "f": QColor(*palette["accent"]),
             "h": QColor(*palette["bright"]),
         }
