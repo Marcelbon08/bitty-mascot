@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import stat
@@ -372,6 +373,76 @@ class CursorSpriteTests(unittest.TestCase):
         colors = colors_for(FakeTheme())
         self.assertEqual(colors["k"], (12, 12, 12))
         self.assertEqual(colors["w"], (250, 250, 250))
+
+
+class CrossPlatformTests(unittest.TestCase):
+    def test_cursor_z_order_uses_qt_outside_windows(self) -> None:
+        from bitty import cursor_view
+
+        class FakeView:
+            raise_ = mock.Mock()
+            lower = mock.Mock()
+
+        view = FakeView()
+        with mock.patch.object(cursor_view.sys, "platform", "linux"):
+            # En macOS/Linux no se toca ctypes.windll: basta el apilado de Qt.
+            cursor_view.BittyCursorView._set_z(view, True)
+            cursor_view.BittyCursorView._set_z(view, False)
+        view.raise_.assert_called_once_with()
+        view.lower.assert_called_once_with()
+
+    def test_cursor_styles_are_not_shadowed_by_sprite_path(self) -> None:
+        from bitty import app
+
+        self.assertIsInstance(app.CURSOR_STYLES, dict)
+        self.assertIn("clasico", app.CURSOR_STYLES)
+        self.assertIsInstance(app.SPRITES, Path)
+
+    def test_hotkey_combines_pynput_and_qt_without_double_action(self) -> None:
+        from bitty.app import BittyWindow
+
+        class FakeWindow:
+            _last_hotkey = dt.datetime.min
+            gaming = False
+            hotkey_pressed = mock.Mock()
+
+        fake = FakeWindow()
+        BittyWindow._hotkey(fake)
+        BittyWindow._hotkey(fake)
+        fake.hotkey_pressed.emit.assert_called_once_with()
+
+    def test_hotkey_exits_gaming_once(self) -> None:
+        from bitty.app import BittyWindow
+
+        class FakeWindow:
+            _last_hotkey = dt.datetime.min
+            gaming = True
+            hotkey_pressed = mock.Mock()
+            _exit_gaming = mock.Mock()
+
+        fake = FakeWindow()
+        BittyWindow._hotkey(fake)
+        BittyWindow._hotkey(fake)
+        fake._exit_gaming.assert_called_once_with()
+        fake.hotkey_pressed.emit.assert_called_once_with()
+
+    def test_logo_search_covers_left_edge_on_macos_and_linux(self) -> None:
+        from PIL import Image
+
+        from bitty.icon_finder import TEMPLATES, find_icon
+
+        template = Image.open(TEMPLATES["brave"]).convert("RGBA").resize((30, 30))
+        screenshot = Image.new("RGB", (900, 200), (18, 18, 24))
+        screenshot.paste(template.convert("RGB"), (15, 20), template.getchannel("A"))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "dock-izquierda.png"
+            screenshot.save(path)
+            self.assertIsNone(find_icon(path, "brave"))
+            found = find_icon(path, "brave", all_edges=True)
+        self.assertIsNotNone(found)
+        self.assertAlmostEqual(found[0], 30, delta=3)
+        self.assertAlmostEqual(found[1], 35, delta=3)
 
 
 if __name__ == "__main__":

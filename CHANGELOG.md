@@ -6,6 +6,21 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [2.5.2] - 2026-11-24 - compatibilidad macOS/Linux
+
+### Añadido
+- **Atajo híbrido `Ctrl+Alt+B`**: `QShortcut` con contexto de aplicación en la ventana principal y en el atajo de gaming, además de `pynput`. Funciona cuando la app tiene foco aunque `pynput` no pueda registrar un hotkey global (Wayland o macOS sin permiso de accesibilidad). Un filtro de 0,4 s evita la doble acción si ambos disparan.
+- **Búsqueda del logo en los cuatro bordes** (`bitty/icon_finder.py`): `find_icon(..., all_edges=True)` mira abajo, arriba, izquierda y derecha. `_bitty_click` lo usa en macOS/Linux, donde el dock o el panel no está necesariamente abajo; Windows mantiene la franja inferior.
+
+### Corregido
+- **Estilos de cursor seleccionables**: en v2.5.1 el dict de estilos quedaba sombreado por la ruta `SPRITES` de los PNG, así que `> CURSOR: ESTILO` no cambiaba nada. Se renombró a `CURSOR_STYLES` y se verifica con test.
+- Apilado del cursor fuera de Windows: la ruta no-Windows usa `raise_`/`lower` de Qt sin tocar `ctypes.windll`; cubierto por test.
+
+### Verificado
+- 22/22 tests Python, tests Node y `typecheck` en verde; build de los cuatro sistemas en CI.
+
+---
+
 ## [2.5.1] - 2026-11-24 - clic virtual, gaming y estilos de cursor
 
 ### Añadido

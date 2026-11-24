@@ -2,7 +2,7 @@
 
 > Mascota flotante, pixelada y de estilo terminal para [OpenCode](https://opencode.ai/).
 > Creada por **Marcelbon** ([@Marcelbon08](https://github.com/Marcelbon08)).
-> **Windows · macOS · Linux · Fedora** · v2.5.1
+> **Windows · macOS · Linux · Fedora** · v2.5.2
 
 Bitty es una diminuta terminal de 64×64 píxeles que vive en tu escritorio: pasea, parpadea, cambia de cara según lo que le dices y te permite hablar con OpenCode sin abrir la aplicación. Ahora además **cambia de tema**: en diciembre se pone navideña, en octubre de Halloween, o tú eliges manualmente.
 
@@ -22,14 +22,14 @@ Declaración completa: **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**.
 
 Los binarios se generan automáticamente con GitHub Actions al publicar cada versión:
 
-| Sistema | Descarga directa v2.5.1 |
+| Sistema | Descarga directa v2.5.2 |
 |---|---|
-| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.1/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
-| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.1/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
-| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.1/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
-| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.1/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
+| Windows | [Bitty-Windows.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.2/Bitty-Windows.zip) → ejecuta `Bitty.exe` |
+| macOS | [Bitty-macOS.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.2/Bitty-macOS.zip) → arrastra `Bitty.app` a Aplicaciones |
+| Linux | [Bitty-Linux.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.2/Bitty-Linux.zip) → ejecuta `Bitty/Bitty` |
+| **Fedora** | [Bitty-Fedora.zip](https://github.com/Marcelbon08/bitty-mascot/releases/download/v2.5.2/Bitty-Fedora.zip) → `bash install-fedora.sh` (incluye el agente que reconoce a Marcelbon) |
 
-👉 **[Página del release v2.5.1](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.1)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
+👉 **[Página del release v2.5.2](https://github.com/Marcelbon08/bitty-mascot/releases/tag/v2.5.2)** · [Última versión](https://github.com/Marcelbon08/bitty-mascot/releases/latest)
 
 Los cuatro binarios se regeneran con los endurecimientos de seguridad de v2.4.1 y el smoke verificado en CI.
 
@@ -84,6 +84,12 @@ Detalle e instalación: **[plugin/README.md](plugin/README.md)**.
 | ![Bitty original](docs/screenshots/bitty-original.png) | ![Bitty navidad](docs/screenshots/bitty-navidad.png) | ![Bitty halloween](docs/screenshots/bitty-halloween.png) |
 
 ![Bitty respondiendo](docs/screenshots/bitty-respuesta.png)
+
+## Novedades de v2.5.2
+
+- **Compatibilidad real en macOS y Linux**: el atajo `Ctrl+Alt+B` ya no depende solo de `pynput` (que puede fallar en Wayland o sin permiso de accesibilidad en macOS); Qt lo registra también como atajo de aplicación, y un filtro evita que se dispare dos veces.
+- **Visión del lanzador en cualquier borde**: `bitty_click` con `brave` busca el logo abajo en Windows, y en macOS/Linux mira también izquierda, derecha y arriba (dock y panel). Si no lo ve, sigue usando las coordenadas dadas y abre la app de la whitelist igualmente.
+- **Corregido**: cambiar `> CURSOR: ESTILO` no aplicaba el estilo porque el nombre quedaba sombreado por la ruta de los sprites; ya se guarda y se aplica en los cuatro sistemas.
 
 ## Novedades de v2.5.1
 

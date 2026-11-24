@@ -1,3 +1,3 @@
 """Bitty Mascot: mascota flotante multiplataforma para OpenCode."""
 
-__version__ = "2.5.1"
+__version__ = "2.5.2"

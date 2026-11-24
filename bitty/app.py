@@ -15,8 +15,8 @@ from typing import Callable
 from PIL import Image
 from PySide6.QtCore import Qt, QEvent, QPoint, QRect, QSize, QTimer, Signal
 from PySide6.QtGui import (
-    QAction, QColor, QCursor, QFont, QGuiApplication, QImage, QPainter,
-    QPen, QPixmap,
+    QAction, QColor, QCursor, QFont, QGuiApplication, QImage, QKeySequence,
+    QPainter, QPen, QPixmap, QShortcut,
 )
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QLineEdit, QMenu, QPlainTextEdit,
@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 
 from . import opencode, state
 from .bridge import Bridge
-from .cursor_sprite import SPRITES, STYLE_LABELS
+from .cursor_sprite import SPRITES as CURSOR_STYLES, STYLE_LABELS
 from .cursor_view import BittyCursorView
 from .desktop_action import invoke_taskbar_button
 from .gaming import GamingShortcut
@@ -128,6 +128,7 @@ class BittyWindow(QWidget):
         self.wait_face_index = 0
         self.sprite_override: str | None = None
         self.override_until = _dt.datetime.min
+        self._last_hotkey = _dt.datetime.min
         self.pixmap_cache: dict[tuple[str, str], QPixmap] = {}
 
         self._build_ui()
@@ -156,6 +157,17 @@ class BittyWindow(QWidget):
         self.gaming_shortcut = GamingShortcut(self.theme)
         self.gaming_shortcut.restore_requested.connect(self._gaming_restore)
         self.gaming_shortcut.restore_quiet_requested.connect(self._exit_gaming)
+
+        # Atajo Qt de respaldo: en Wayland o macOS pynput puede no registrar
+        # GlobalHotKeys (sin X11 o sin permiso de accesibilidad). Lo registro
+        # también en el atajo de gaming para poder salir con el teclado.
+        self.qt_shortcuts: list[QShortcut] = []
+        sequence = QKeySequence("Ctrl+Alt+B")
+        for widget in (self, self.gaming_shortcut):
+            shortcut = QShortcut(sequence, widget)
+            shortcut.setContext(Qt.ShortcutContext.ApplicationShortcut)
+            shortcut.activated.connect(self._hotkey)
+            self.qt_shortcuts.append(shortcut)
 
         # El puente HTTP vive en un hilo: las órdenes se encolan y se aplican
         # desde el timer de Qt, que sí está en el hilo de la interfaz.
@@ -361,6 +373,11 @@ class BittyWindow(QWidget):
             self.hotkey_listener = None
 
     def _hotkey(self) -> None:
+        # pynput y QShortcut pueden disparar a la vez: un único gesto.
+        now = _dt.datetime.now()
+        if (now - self._last_hotkey).total_seconds() < 0.4:
+            return
+        self._last_hotkey = now
         if self.gaming:
             # El atajo de teclado también sirve para salir del modo gaming:
             # no hace falta ir a la esquina con el ratón durante una partida.
@@ -760,7 +777,10 @@ class BittyWindow(QWidget):
             )
             try:
                 info = capture_to_png(shot)
-                located = find_icon(Path(info["path"]), open_app)
+                located = find_icon(
+                    Path(info["path"]), open_app,
+                    all_edges=(sys.platform != "win32"),
+                )
                 if located:
                     target = (located[0], located[1])
                     seen = "LOGO VISTO"
@@ -911,7 +931,7 @@ class BittyWindow(QWidget):
             action.setChecked(key == self.theme_key)
 
     def _set_cursor_style(self, key: str) -> None:
-        if key not in SPRITES:
+        if key not in CURSOR_STYLES:
             return
         self.cursor_style = key
         self.data["cursor_style"] = key
